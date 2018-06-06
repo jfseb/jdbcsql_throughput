@@ -1,0 +1,93 @@
+{
+  "name": "jdbcsql_throughput",
+  "version": "0.0.1",
+  "description": "Nodejs JDBC SQL connector and sample program for throughput measurement",
+  "main": "main.js",
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/jfseb/jdbcsql_throughput.git"
+  },
+  "bugs": {
+    "url": "http://github.com/jfseb/jdbcsql_throughput/issues"
+  },
+  "scripts": {
+    "pretest": "bash bin/startdbs",
+    "posttest": "bash bin/stopdbs",
+    "setup": "gulp default",
+    "test": "gulp test",
+    "testOld": "./node_modules/.bin/nodeunit test/match test/utils && eslint",
+    "startConsole": "node console_app.js",
+    "run": "nodeunit",
+    "start": "node main",
+    "coverage": "./node_modules/.bin/nyc --source-map false nodeunit test/match test/exec test/ui test/model test/bot test/utils ",
+    "coverreportplain": "./node_modules/.bin/nyc --source-map false report --reporter=text-lcov ",
+    "coveralls": "./node_modules/.bin/nyc --source-map false report --reporter=text-lcov | coveralls"
+  },
+  "keywords": [
+    "jdbc",
+    "sql client"
+  ],
+  "author": "jfsebpublic@gmail.com",
+  "license": "Apache",
+  "dependencies": {
+    "ascii-table": "^0.0.9",
+    "debug": "^2.3.2",
+    "jdbc": "^0.6.2",
+    "lodash": "^4.17.10",
+    "long": "^4.0.0",
+    "node-java": "^1.0.1",
+    "node-uuid": "^1.4.7",
+    "nyc": "^11.0.2",
+    "stream-to-array": "^2.3.0"
+  },
+  "bin": {
+    "nodeunit": ".nodeunit/bin/nodeunit",
+    "coverallst": ".coveralls/bin/coveralls"
+  },
+  "directories": {
+    "lib": "./lib",
+    "src": "./src",
+    "test": "./test",
+    "doc": "./doc",
+    "man": "./man1"
+  },
+  "babel": {
+    "comments": true
+  },
+  "devDependencies": {
+    "@types/debug": "0.0.29",
+    "@types/fixed-data-table": "^0.6.31",
+    "@types/lodash": "^4.14.50",
+    "@types/node": "7.0.5",
+    "awesome-typescript-loader": "^3.0.0-beta.18",
+    "babel": "^6.5.2",
+    "babel-preset-es2015": "^6.18.0",
+    "browserify-shim": "^3.8.13",
+    "coveralls": "^2.11.15",
+    "debug-levels": "^0.2.0",
+    "del": "^2.2.2",
+    "eslint": "^3.10.2",
+    "eslint-config-standard": "^6.2.1",
+    "eslint-plugin-promise": "^3.4.0",
+    "eslint-plugin-standard": "^2.0.1",
+    "gulp": "^3.9.1",
+    "gulp-babel": "^6.1.2",
+    "gulp-env": "^0.4.0",
+    "gulp-eslint": "^3.0.1",
+    "gulp-jsdoc3": "^2.0.0",
+    "gulp-log-capture": "0.0.6",
+    "gulp-newer": "^1.3.0",
+    "gulp-nodeunit": "0.0.5",
+    "gulp-shell": "^0.5.2",
+    "gulp-sourcemap": "^1.0.1",
+    "gulp-typescript": "^3.1.3",
+    "gulp-watch": "^4.3.11",
+    "node-uuid": "^1.4.7",
+    "nodeunit": "^0.10.2",
+    "request-defaults": "^1.2.0",
+    "source-map-loader": "^0.1.6",
+    "stream-to-array": "^2.3.0",
+    "ts-loader": "^4.3.1",
+    "typescript": "^2.2.2"
+  }
+}
