@@ -1,6 +1,6 @@
 var process = require('process');
 var root = (process.env.FSD_COVERAGE) ? '../../gen_cov' : '../../gen';
-// var _ = require('lodash');
+var _ = require('lodash');
 // var debuglog = require('debug')('plainRecoginizer.nunit')
 
 var debug = require('debug');
@@ -15,7 +15,7 @@ console.log('config' + JSON.stringify(config));
 // var HTMLConnector = require(root + '/ui/htmlconnector.js')
 // const SmartDialog = require(root + '/bot/smartdialog.js')
 
-exports.testCreateDelete = function(test) {
+exports.testNotExistTable = function(test) {
   var config = new SQLExec.SQLExec().config;
   console.log('config' + JSON.stringify(config));
   var testpool = new Pool(config);
@@ -28,23 +28,13 @@ exports.testCreateDelete = function(test) {
   executor.runStatementFromPool(s4, testpool).then( function(T)
   {
     console.log(JSON.stringify(T));
-    test.deepEqual(T.result.length, 2);
+    test.deepEqual(false, undefined);
     test.done();
-  }
-/*
-
-  executor.runStatementFromPool(s1, testpool).then( function(T)
-  {
-    return executor.runStatementFromPool(s3, testpool);
-  }).then(function (T) {
-    return executor.runStatementFromPool(s2, testpool);
-  }).then(function(T) {
-    return executor.runStatementFromPool(s4, testpool).then(function(R))
-  }).then(function(U))
-  })
-*/
-
-  );
+  }).catch(function(err) {
+    test.deepEqual(!!(err.indexOf("T1") > 0), true)
+    test.deepEqual(err, err);
+    test.done();
+  });
 };
 
 
