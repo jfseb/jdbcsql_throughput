@@ -1,21 +1,22 @@
 dist: trusty
 language: java
 sudo: false
+# we assume others are tested with node-jdbc
 jdk:
   - oraclejdk8
   - openjdk8
-  - oraclejdk7
-  - openjdk7
+ # - oraclejdk7
+ # - openjdk7
 env:
   - NODE_VERSION="9.2.0" CC=clang CXX=clang++
   - NODE_VERSION="8.9.1" CC=clang CXX=clang++
-  - NODE_VERSION="7.10.1" CC=clang CXX=clang++
-  - NODE_VERSION="6.12.0" CC=clang CXX=clang++
-  - NODE_VERSION="5.12.0" CC=clang CXX=clang++
-  - NODE_VERSION="4.8.6" CC=clang CXX=clang++
-  - NODE_VERSION="0.12.18"
-  - NODE_VERSION="0.11.16"
-  - NODE_VERSION="0.10.48"
+#  - NODE_VERSION="7.10.1" CC=clang CXX=clang++
+#  - NODE_VERSION="6.12.0" CC=clang CXX=clang++
+#  - NODE_VERSION="5.12.0" CC=clang CXX=clang++
+#  - NODE_VERSION="4.8.6" CC=clang CXX=clang++
+#  - NODE_VERSION="0.12.18"
+#  - NODE_VERSION="0.11.16"
+#  - NODE_VERSION="0.10.48"
 before_install:
   - nvm --version
   - nvm install $NODE_VERSION
@@ -23,6 +24,7 @@ before_script:
   - npm --version
   - node --version
   - npm install
+  - npm install -g gulp
   - gulp
 script:
   - npm test
