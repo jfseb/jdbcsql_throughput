@@ -1,15 +1,31 @@
-language: node_js
+dist: trusty
+language: java
+sudo: false
+jdk:
+  - oraclejdk8
+  - openjdk8
+  - oraclejdk7
+  - openjdk7
+env:
+  - NODE_VERSION="9.2.0" CC=clang CXX=clang++
+  - NODE_VERSION="8.9.1" CC=clang CXX=clang++
+  - NODE_VERSION="7.10.1" CC=clang CXX=clang++
+  - NODE_VERSION="6.12.0" CC=clang CXX=clang++
+  - NODE_VERSION="5.12.0" CC=clang CXX=clang++
+  - NODE_VERSION="4.8.6" CC=clang CXX=clang++
+  - NODE_VERSION="0.12.18"
+  - NODE_VERSION="0.11.16"
+  - NODE_VERSION="0.10.48"
+before_install:
+  - nvm --version
+  - nvm install $NODE_VERSION
 before_script:
-#  - npm i -g typescript typings
-#  - typings install
-#  - typings install debug
-  - unset FSD_COVERAGE
+  - npm --version
+  - node --version
+  - npm install
   - gulp
-#  - gulp instrument
-node_js:
- - "6"
- - "node"
-# - "4"   does not support sourcemaps
+script:
+  - npm test
 after_script:
   - npm run coverage
   - npm run coveralls
