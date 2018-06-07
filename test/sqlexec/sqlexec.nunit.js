@@ -1,6 +1,6 @@
 var process = require('process');
 var root = (process.env.FSD_COVERAGE) ? '../../gen_cov' : '../../gen';
-var _ = require('lodash');
+// var _ = require('lodash');
 // var debuglog = require('debug')('plainRecoginizer.nunit')
 
 var debug = require('debug');
@@ -31,7 +31,7 @@ exports.testNotExistTable = function(test) {
     test.deepEqual(false, undefined);
     test.done();
   }).catch(function(err) {
-    test.deepEqual(!!(err.indexOf("T1") > 0), true)
+    test.deepEqual(!!(err.indexOf('T1') > 0), true)
     test.deepEqual(err, err);
     test.done();
   });
