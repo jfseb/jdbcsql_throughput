@@ -1,4 +1,4 @@
-# jdbcsql_throughput [![Build Status](https://travis-ci.org/jfseb/jdbcsql_throughput.svg?branch=master)](https://travis-ci.org/jfseb/jdbc_sqlthroughput)[![Coverage Status](https://coveralls.io/repos/github/jfseb/jdbcsql_throughput/badge.svg?branch=master)](https://coveralls.io/github/jfseb/jdbcsql_throughput?branch=master)
+# jdbcsql_throughput [![Build Status](https://travis-ci.org/jfseb/jdbcsql_throughput.svg?branch=master)](https://travis-ci.org/jfseb/jdbcsql_throughput)[![Coverage Status](https://coveralls.io/repos/github/jfseb/jdbcsql_throughput/badge.svg?branch=master)](https://coveralls.io/github/jfseb/jdbcsql_throughput?branch=master)
 
 Nodejs JDBC SQL connector and sample program for throughput measurement
 
