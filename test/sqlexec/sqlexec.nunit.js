@@ -31,7 +31,7 @@ exports.testNotExistTable = function(test) {
     test.deepEqual(false, undefined);
     test.done();
   }).catch(function(err) {
-    test.deepEqual(!!(err.indexOf('T1') > 0), true)
+    test.deepEqual(!!(err.indexOf('T1') > 0), true);
     test.deepEqual(err, err);
     test.done();
   });
