@@ -23,7 +23,7 @@ exports.testNotExistTable = function(test) {
   //var s1 = 'CREATE TABLE IF NOT EXISTS T1 ( id int primary key, abc varchar(10));';
   //var s2 = 'INSERT INTO T1 (id, abc) values (2, \'def\');';
   //var s3 = 'DELETE FROM T1;';
-  var s4 = 'SELECT * FROM T1;';
+  var s4 = 'SELECT * FROM T1_NEVER;';
 
   executor.runStatementFromPool(s4, testpool).then( function(T)
   {
@@ -31,12 +31,12 @@ exports.testNotExistTable = function(test) {
     test.deepEqual(false, undefined);
     test.done();
   }).catch(function(err) {
-    test.deepEqual(!!(err.indexOf('T1') > 0), true);
+    console.log('here err: ' + err + JSON.stringify(err) + ' typof' + typeof err);
+    test.deepEqual(!!( ('' + err).indexOf('T1_NEVER') > 0), true);
     test.deepEqual(err, err);
     test.done();
   });
 };
-
 
 exports.testAsciiTable = function(test) {
 
@@ -92,7 +92,7 @@ exports.testCreateDelete2 = function(test) {
   var executor = new SQLExec.SQLExec();
   var s1 = 'CREATE TABLE IF NOT EXISTS T1 ( id int primary key, abc varchar(10));';
   var s2a = 'INSERT INTO T1 (id, abc) values (1, \'def\');';
-  var s2b = 'INSERT INTO T1 (id, abc) values (2, \'def\');';
+  var s2b = 'INSERT INTO T1 (id, abc) values (2, \'hij\');';
   var s3 = 'DELETE FROM T1;';
   var s4 = 'SELECT * FROM T1;';
 
@@ -124,6 +124,10 @@ exports.testdescribeDontKnowQuotes = function (test) {
       test.deepEqual(undefined,err, 'err');
       test.done();
     }
+    test.deepEqual(res, [
+      { ID : 1, ABC : 'def'},
+      { ID : 2, ABC : 'hij'}
+    ]);
     console.log(res);
     test.done();
   };

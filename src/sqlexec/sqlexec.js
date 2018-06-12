@@ -1,10 +1,6 @@
 
 'use strict';
-var abc = require('jdbc/lib/jinst');
-console.log('here abc: ' + abc);
-console.log('here POOL: ' + abc.Pool);
 var jinst = require('jdbc/lib/jinst');
-console.log( 'here jsinst' + jinst);
 var Pool = require('jdbc').Pool;
 var AsciiTable = require('ascii-table');
 
@@ -23,7 +19,7 @@ var SQLExec = (function () {
     user: 'SA',
     password: '',
     minpoolsize: 2,
-    maxpoolsize: 3
+    maxpoolsize: 500
   };
 
   function SQLExec (options) {
@@ -45,8 +41,6 @@ var SQLExec = (function () {
   };
 
   SQLExec.prototype.makeAsciiTable = function(obj) {
-
-
     const table1 = new AsciiTable();
     table1.setHeading('a','b','c')
     .addRow('a', 'apple', 'Some longer string');
@@ -62,11 +56,13 @@ var SQLExec = (function () {
     if(obj.length  > 0 ) {
       var arr = Object.getOwnPropertyNames(obj[0]);
       console.log('here arr' + arr);
-      table.setHeading.apply(null, arr);
+      table.setHeading.apply(table, arr);
     }
-    obj.foreach( function(entry) {
-      var arr2 = Object.getOwnPropertyDescriptor(obj[0]).map(function(key) { return entry[key];});
-      table.addRow.apply(null, arr2);
+    obj.forEach( function(entry) {
+      console.log( JSON.stringify(entry));
+      console.log(' here ' +  JSON.stringify(obj[0]));
+      var arr2 = Object.getOwnPropertyNames(obj[0]).map(function(key) { return entry[key];});
+      table.addRow.apply(table, arr2);
     });
     return table.toString();
   };
@@ -76,6 +72,17 @@ var SQLExec = (function () {
     .addRow('c', 'carrot', 'meow')
     .addRow('e', 'elephants')
 */
+
+
+  SQLExec.prototype.makeRunner = function(testpool) {
+    var r = {
+      pool: testpool ,
+      execStatement : function(statement) {
+        return SQLExec.prototype.runStatementFromPool(statement, testpool);
+      }
+    };
+    return r;
+  };
 
   SQLExec.prototype.runStatementFromPool = function(statement, testpool)
   {
@@ -94,6 +101,7 @@ var SQLExec = (function () {
             }
             resolve({ pool: testpool, conn: result.conn, result: result.result});
           });
+          return;
         }
         if(err) {
           reject(err);
@@ -130,6 +138,8 @@ var SQLExec = (function () {
               }
               if(results.length > 0) {
                 console.log('ID: ' + JSON.stringify(results));
+              } else {
+                console.log(' no length result ');
               }
               callback(null, { conn: conn, result: results} );
             });
