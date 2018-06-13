@@ -2,22 +2,45 @@
 'use strict';
 
 var jinst = require('jdbc/lib/jinst');
-var Pool = require('jdbc').Pool;
 var AsciiTable = require('ascii-table');
+var _ = require('lodash');
 
 if (!jinst.isJvmCreated()) {
+  console.log('adding stuff now');
   jinst.addOption('-Xrs');
-  var root = '';
-  jinst.setupClasspath([root + './drivers/hsqldb.jar', root + './drivers/derby.jar', root + './drivers/derbyclient.jar', root + './drivers/derbytools.jar']);
+  var root = '~/localgit/jdbcsql_throughput/';
+
+  jinst.setupClasspath([//root + './drivers/hsqldb.jar',
+  root + './drivers/acmereports.jar', '/home/D026276/localgit/jdbcsql_throughput/drivers/acmereports.jar']);
+
+  /*
+  
+    jinst.setupClasspath([  //root + './drivers/hsqldb.jar',
+  //    root + './drivers/derby.jar',
+      root + './drivers/hl-jdbc-2.3.90.jar',
+      '/home/D026276/localgit/jdbcsql_throughput//drivers/hl-jdbc-2.3.90.jar',
+      root + './drivers/derbyclient.jar',
+      root + './drivers/derbytools.jar']);
+  
+  */
 }
+
+var Pool = require('jdbc').Pool;
 
 var SQLExec = function () {
   var config = {
-    url: 'jdbc:hsqldb:hsql://localhost/xdb',
-    user: 'SA',
+    //    url: 'jdbc:hsqldb:hsql://localhost/xdb',
+    //    user: 'SA',
+    libpath: './drivers/hl-jdbc-2.3.90.jar',
+    drivername: 'com.sap.vora.jdbc.VoraDriver',
+    url: 'jdbc:hanalite://' + '127.0.0.1:2202',
+    //url : 'jdbc:hanalite://' + '127.0.0.1:2202' + '/?resultFormat=binary',    
+    user: '',
+    logging: 'info',
     password: '',
     minpoolsize: 2,
     maxpoolsize: 500
+    //    properties : {user: '', password : ''}
   };
 
   function SQLExec(options) {
@@ -31,6 +54,10 @@ var SQLExec = function () {
   SQLExec.prototype.Pool = Pool;
 
   SQLExec.prototype.config = config;
+
+  //  var java = jinst.getInstance();
+  //  java.callStaticMethodSync('java.lang.Class', 'forName', 'com.sap.vora.jdbc.VoraDriver');
+
 
   SQLExec.prototype.aFunction = function (answerHook, id) {
     if (id) {
@@ -80,6 +107,78 @@ var SQLExec = function () {
     return r;
   };
 
+  var ResultSet_toObjectIter = function ResultSet_toObjectIter(callback) {
+    var self = this;
+
+    self.getMetaData(function (err, rsmd) {
+      if (err) {
+        return callback(err);
+      } else {
+        var colsmetadata = [];
+
+        rsmd.getColumnCount(function (err, colcount) {
+
+          if (err) return callback(err);
+
+          // Get some column metadata.
+          _.each(_.range(1, colcount + 1), function (i) {
+            colsmetadata.push({
+              label: rsmd._rsmd.getColumnNameSync(i),
+              type: rsmd._rsmd.getColumnTypeSync(i)
+            });
+          });
+
+          callback(null, {
+            labels: _.map(colsmetadata, 'label'),
+            types: _.map(colsmetadata, 'type'),
+            rows: {
+              next: function next() {
+                var nextRow;
+                try {
+                  nextRow = self._rs.nextSync(); // this row can lead to Java RuntimeException - sould be cathced.
+                } catch (error) {
+                  callback(error);
+                }
+                if (!nextRow) {
+                  return {
+                    done: true
+                  };
+                }
+
+                var result = {};
+
+                // loop through each column
+                _.each(_.range(1, colcount + 1), function (i) {
+                  var cmd = colsmetadata[i - 1];
+                  var type = self._types[cmd.type] || 'String';
+                  var getter = 'get' + type + 'Sync';
+
+                  if (type === 'Date' || type === 'Time' || type === 'Timestamp') {
+                    var dateVal = self._rs[getter](i);
+                    result[cmd.label] = dateVal ? dateVal.toString() : null;
+                  } else {
+                    // If the column is an integer and is null, set result to null and continue
+                    if (type === 'Int' && _.isNull(self._rs.getObjectSync(i))) {
+                      result[cmd.label] = null;
+                      return;
+                    }
+
+                    result[cmd.label] = self._rs[getter](i);
+                  }
+                });
+
+                return {
+                  value: result,
+                  done: false
+                };
+              }
+            }
+          });
+        });
+      }
+    });
+  };
+
   SQLExec.prototype.runStatementFromPool = function (statement, testpool) {
     return new Promise(function (resolve, reject) {
       var connObj = undefined;
@@ -122,14 +221,13 @@ var SQLExec = function () {
               callback(err);
               return;
             }
+            resultSet.toObjectIter = ResultSet_toObjectIter;
             resultSet.toObjArray(function (err, results) {
               if (err) {
                 callback(err);
                 return;
               }
-              if (results.length > 0) {
-                console.log('ID: ' + JSON.stringify(results));
-              } else {
+              if (results.length > 0) {} else {
                 console.log(' no length result ');
               }
               callback(null, { conn: conn, result: results });
