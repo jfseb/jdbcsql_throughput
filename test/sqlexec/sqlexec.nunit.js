@@ -6,17 +6,19 @@ var root = (process.env.FSD_COVERAGE) ? '../../gen_cov' : '../../gen';
 var debug = require('debug');
 const debuglog = debug('sqlexec.nunit');
 
+// strongly recommended to load this first, as it brings up the jvm,
+// setting classpath variables!
+const config = require(root + '/configs/config_derby.js').config;
+
 var Pool = require('jdbc');
 
 const SQLExec = require(root + '/sqlexec/sqlexec.js');
 
-var config = new SQLExec.SQLExec().config;
 console.log('config' + JSON.stringify(config));
 // var HTMLConnector = require(root + '/ui/htmlconnector.js')
 // const SmartDialog = require(root + '/bot/smartdialog.js')
 
 exports.testNotExistTable = function(test) {
-  var config = new SQLExec.SQLExec().config;
   console.log('config' + JSON.stringify(config));
   var testpool = new Pool(config);
   var executor = new SQLExec.SQLExec();
@@ -84,9 +86,14 @@ exports.testAsciiTable2 = function(test) {
 };
 
 
+exports.testGetExecutors = function(test) {
+  console.log('config' + JSON.stringify(config));
+  var testpool = new Pool(config);
+  var executors = SQLExec.getExecutors(testpool, 4);
+  test.deepEqual(executors.length,4);
+};
 
 exports.testCreateDelete2 = function(test) {
-  var config = new SQLExec.SQLExec().config;
   console.log('config' + JSON.stringify(config));
   var testpool = new Pool(config);
   var executor = new SQLExec.SQLExec();
@@ -110,13 +117,13 @@ exports.testCreateDelete2 = function(test) {
     test.deepEqual(R.result.length, 2);
     test.done();
   }).catch(function(err) {
-    test.deepEqual(err, 'wowo', 'rejection');
+    console.log(err);
+    test.deepEqual(err, 'should not get here', 'rejection');
     test.done();
   });
 };
 
-exports.testdescribeDontKnowQuotes = function (test) {
-  var config = new SQLExec.SQLExec().config;
+exports.testSQL2 = function (test) {
   console.log('config' + JSON.stringify(config));
   var callback = function(err, res) {
     if(err) {

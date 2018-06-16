@@ -1,48 +1,28 @@
-
 'use strict';
+//var jinst = require('jdbc/lib/jinst');
 
-var jinst = require('jdbc/lib/jinst');
 var AsciiTable = require('ascii-table');
 var _ = require('lodash');
-
-if (!jinst.isJvmCreated()) {
-  console.log('adding stuff now');
-  jinst.addOption('-Xrs');
-  var root = '~/localgit/jdbcsql_throughput/';
-
-  jinst.setupClasspath([//root + './drivers/hsqldb.jar',
-  root + './drivers/acmereports.jar', '/home/D026276/localgit/jdbcsql_throughput/drivers/acmereports.jar']);
-
-  /*
-  
-    jinst.setupClasspath([  //root + './drivers/hsqldb.jar',
-  //    root + './drivers/derby.jar',
-      root + './drivers/hl-jdbc-2.3.90.jar',
-      '/home/D026276/localgit/jdbcsql_throughput//drivers/hl-jdbc-2.3.90.jar',
-      root + './drivers/derbyclient.jar',
-      root + './drivers/derbytools.jar']);
-  
-  */
-}
 
 var Pool = require('jdbc').Pool;
 
 var SQLExec = function () {
+  /*
   var config = {
-    //    url: 'jdbc:hsqldb:hsql://localhost/xdb',
-    //    user: 'SA',
-    libpath: './drivers/hl-jdbc-2.3.90.jar',
-    drivername: 'com.sap.vora.jdbc.VoraDriver',
-    url: 'jdbc:hanalite://' + '127.0.0.1:2202',
-    //url : 'jdbc:hanalite://' + '127.0.0.1:2202' + '/?resultFormat=binary',    
-    user: '',
-    logging: 'info',
+  //    url: 'jdbc:hsqldb:hsql://localhost/xdb',
+  //    user: 'SA',
+    libpath : './drivers/hl-jdbc-2.3.90.jar',
+    drivername : 'com.sap.vora.jdbc.VoraDriver',
+    url : 'jdbc:hanalite://' + '127.0.0.1:2202',
+    //url : 'jdbc:hanalite://' + '127.0.0.1:2202' + '/?resultFormat=binary',
+    user : '',
+    logging : 'info',
     password: '',
     minpoolsize: 2,
     maxpoolsize: 500
-    //    properties : {user: '', password : ''}
+  //    properties : {user: '', password : ''}
   };
-
+  */
   function SQLExec(options) {
     this.replyCnt = 0;
     this.answerHooks = {};
@@ -53,7 +33,7 @@ var SQLExec = function () {
 
   SQLExec.prototype.Pool = Pool;
 
-  SQLExec.prototype.config = config;
+  //SQLExec.prototype.config = config;
 
   //  var java = jinst.getInstance();
   //  java.callStaticMethodSync('java.lang.Class', 'forName', 'com.sap.vora.jdbc.VoraDriver');
@@ -101,12 +81,16 @@ var SQLExec = function () {
     var r = {
       pool: testpool,
       execStatement: function execStatement(statement) {
-        return SQLExec.prototype.runStatementFromPool(statement, testpool);
+        return SQLExec.prototype.runStatementFromPool(statement, this.pool);
       }
     };
     return r;
   };
 
+  /**
+   * "Fixes the node-jdbc collect to also accept "
+   * @param {*} callback
+   */
   var ResultSet_toObjectIter = function ResultSet_toObjectIter(callback) {
     var self = this;
 
@@ -123,7 +107,8 @@ var SQLExec = function () {
           // Get some column metadata.
           _.each(_.range(1, colcount + 1), function (i) {
             colsmetadata.push({
-              label: rsmd._rsmd.getColumnNameSync(i),
+              // modification, fall back to column name
+              label: rsmd._rsmd.getColumnLabelSync(i) || rsmd._rsmd.getColumnNameSync(i),
               type: rsmd._rsmd.getColumnTypeSync(i)
             });
           });
@@ -177,6 +162,15 @@ var SQLExec = function () {
         });
       }
     });
+  };
+
+  SQLExec.prototype.getExecutors = function (pool, nr) {
+    var u = new SQLExec(pool);
+    var res = [];
+    for (var i = 0; i < nr; ++i) {
+      res.push(u.makeRunner(pool));
+    }
+    return res;
   };
 
   SQLExec.prototype.runStatementFromPool = function (statement, testpool) {

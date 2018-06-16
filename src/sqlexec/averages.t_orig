@@ -1,7 +1,5 @@
 
 
-import {Pool} from 'jdbc';
-import {ParallelExec} from './parallel_exec';
 import * as debug from 'debug';
 import { INSPECT_MAX_BYTES } from 'buffer';
 const debuglog = debug('average');
@@ -20,32 +18,15 @@ export const enum ResponseCode {
 import { ISQLExecutor, IParallelOp, Status,
   Mode,
   IRun,
-  Metrics,
   IMetrics,
   ICallbacks,
   IOptions,
-  IParallelExecutor,
   ITimingMap,
   IResultRec,
   ITimingRec } from '../constants';
 
 var handles = new Map<string, IParallelOp>();
 
-
-var index = 0;
-var allresults = [];
-
-var forks : Forks = undefined;
-
-var SQLExec2 = require('./sqlexec.js');
-var SQLExec = SQLExec2.SQLExec;
-
-//import {SQLExec} from './sqlexec.js';
-import {Forks} from './sqlexec_remote';
-
-var parexec : IParallelExecutor = undefined;
-
-/*
 export function isTerminated(op : IParallelOp) : boolean
 {
   if (op.cp_running > 0) {
@@ -63,12 +44,10 @@ export function isTerminated(op : IParallelOp) : boolean
     return true;
   }
   return op.slots.every( run => run.status == Status.DONE );
-}*/
+}
 
 
 var t_total : number = 0;
-
-/*
 export function recordStart(op : IParallelOp, slot: IRun)
 {
   op.metrics.parallel++;
@@ -92,10 +71,14 @@ export function recordEnd(op : IParallelOp, slot: IRun, rc : boolean, res : any)
   if( rc )
   {
     op.metrics.count_ok++;
+    op.metrics.query_ok.AddSample();
   }
   else {
     op.metrics.count_bad++;
+    op.metrics.query_bad.AddSample();
   }
+  op.metrics.query_all.AddSample();
+  op.metrics.query_duration.AddSample(slot.duration);
   var d = new Date();
   if (rc && op.callbacks && op.callbacks.result ) {
     // console.log('having result ' + JSON.stringify(res));
@@ -121,10 +104,10 @@ export function recordEnd(op : IParallelOp, slot: IRun, rc : boolean, res : any)
 }
 
 export function recordOk(op: IParallelOp, run: IRun, res : any) {
- /-* res.conn.close(function(err, ok) {
+ /* res.conn.close(function(err, ok) {
     if(err)
      console.log('error closing' + err);
-  });*-/
+  });*/
   recordEnd(op, run, true, res.result);
 }
 
@@ -132,34 +115,146 @@ export function recordBad(op: IParallelOp, run: IRun, res : any) {
   console.log('BADD!!!!' + res);
   recordEnd(op,run, false, res);
 }
-*/
+
+export class RemoteExecutor {
+  dest : child_process.ChildProcess;
+  idx : number;
+  handle: string;
+  constructor(fork : child_process.ChildProcess, handle : string, idx : number) {
+    this.dest = fork;
+    this.handle = handle;
+    this.idx = idx;
+  };
+  run(statement : string)
+  {
+    var that = this;
+    console.log('sending ' + that.handle + ' ' + that.idx);
+    that.dest.send( { handle : that.handle, idx : that.idx, statement : statement });
+  };
+};
+
 
 
 var tcnt = 0;
 
-export function startOpMonitor(parexec : IParallelExecutor) {
-
-  parexec.startOpRepeat(
-    "monitor",
-    'SELECT * FROM SYS.INTERNAL_REL_NODE_RT_AVG;',
-    4,
+export function scheduleOps(op : IParallelOp, sqlexec : any) {
+  while(op.slots.length < op.parallel) {
+    var slot : IRun =  { index : op.slots.length, statement : op.statement, status : Status.INITIAL,
+      duration : 0 };
+    var idx = Math.floor(op.slots.length  / 4);
+    if(idx > 0) {
+      slot.remote = new RemoteExecutor(forks[idx], op.name, op.slots.length );
+    }
+    op.slots.push(slot);
+  }
+  debuglog('augmenting parallel ' + op.slots.length);
+  var terminate_nr = op.options && op.options.continuous && op.options.terminate_nr;
+  if (terminate_nr && terminate_nr > 0 && op.metrics.count_total > terminate_nr )
+  {
+    op.status = Status.STOPPED;
+  }
+  var t = Date.now();
+  var terminate_delta_t = op.options && op.options.continuous && op.options.terminate_delta_t;
+  if (terminate_delta_t && terminate_delta_t > 0 && op.t_started > 0
+    && ((t - op.t_started) >  terminate_delta_t ))
+  {
+    op.status = Status.STOPPED;
+  }
+  if (op.status == Status.STOPPED) {
+    return;
+  }
+  if( op.options.every_t > 0 ) {
+    // figure out if the last runnig started op
+    debuglog( 'delta is ' + (Date.now() - op.options.t_last));
+    if( (Date.now() - op.options.t_last ) < op.options.every_t) {
+      return;
+    }
+    // find a slot which is DONE.
+    var res = op.slots.filter( entry => entry.status == Status.DONE || entry.status == Status.INITIAL );
+    if( res.length)
     {
-      forcename : "monitor",
-      continuous : true,
-      t_last : 0,
-      every_t : 2000, // every second!
-    },
-    /*callbacks :*/
-    {
-      result : function(err, res) {
-        if(!err) {
-          var timing = makeTimingRecord(res);
-          registerTiming(Date.now(), timing);
+      var entry = res[0];
+      entry.status = Status.RUNNING;
+      recordStart(op,entry);
+      debuglog(op.statement);
+      op.options.t_last = Date.now();
+      op.metrics.count_started++;
+      sqlexec.execStatement(entry.statement).then( res =>
+        {
+          recordOk(op,entry,res);
+          loopIt(sqlexec);
         }
+      ).catch( err => {
+        recordBad(op, entry, err);
+        loopIt(sqlexec);
+      });
+    }
+    return;
+  }
+
+  op.slots.every(entry => {
+    if((op.options.continuous && entry.status != Status.RUNNING ) || entry.status == Status.INITIAL)
+    {
+      debuglog(' t/s/f  ' + op.tag + ' ' + op.options.terminate_nr  + '/' + op.metrics.count_started + '/' + op.metrics.count_total);
+      if(op.options && (op.options.terminate_nr > 0) && op.metrics.count_started >= op.options.terminate_nr) {
+        entry.status = Status.DONE;
+        return;
+      }
+      entry.status = Status.RUNNING;
+      recordStart(op,entry);
+      debuglog(op.statement);
+      op.metrics.count_started++;
+      if(entry.remote) {
+        entry.remote.run(entry.statement);
+      } else {
+        sqlexec.execStatement(entry.statement).then( res =>
+          {
+            recordOk(op,entry,res);
+            loopIt(sqlexec);
+          }
+        ).catch( err => {
+          recordBad(op, entry, err);
+          loopIt(sqlexec);
+        });
+      }
+      return (op.mode != Mode.SEQUENTIAL); // when sequential, stop after first scheduling
+    }
+    return true;
+  });
+}
+
+export function loopIt( sqlexec: any) : void
+{
+  if (t_total == 0) {
+    t_total = Date.now();
+  }
+  var removeKey : string[] = [];
+  handles.forEach(function(op , key)
+  {
+    debuglog('looking at' + key + ' value ' + op.name);
+    if (isTerminated(op)) {
+      console.log('is terminated:' + op.name);
+      removeKey.push(key);
+    }
+    scheduleOps(op, sqlexec);
+  });
+  removeKey.forEach( key =>
+    { const op = handles.get(key);
+      handles.delete(key);
+      console.log(' REMOVING ' + key);
+      if (op.callbacks && op.callbacks.done)
+      {
+        op.callbacks.done(op);
       }
     }
-  )
-  /*
+  );
+  if (handles.size > 0)
+  {
+    setTimeout( function() { loopIt(sqlexec);}, 500);
+  }
+}
+
+export function startOpMonitor() {
   var d = new Date();
   var op: IParallelOp = {
     tag : "monitor",
@@ -189,11 +284,8 @@ export function startOpMonitor(parexec : IParallelExecutor) {
       }
     }
   };
-  *
   handles.set(op.name, op);
   return op.name;
-}
-*/
 }
 
 var cnt = 0;
@@ -235,6 +327,49 @@ export function startOpRepeat(tag: string, statement: string, parallel: number, 
   handles.set(op.name, op);
   return op.name;
 }
+
+export function startOpSequential(statement: string): string {
+  var d = new Date();
+  var op: IParallelOp = {
+    tag : 'sequential',
+    name: 'sequential',
+    statement: statement,
+    t_started : 0,
+    status: Status.RUNNING,
+    parallel : 1,
+    cps : [],
+    cp_running : 0,
+    options : {
+      continuous : false,
+    },
+    mode : Mode.SEQUENTIAL,
+    slots: [],
+    allresults : [],
+    timings :[],
+    metrics : new Metrics()
+  };
+  if(handles.has(op.name)) {
+    op = handles.get('sequential');
+  } else {
+    handles.set(op.name, op);
+  }
+  op.status = Status.RUNNING;
+  op.slots.push( {
+    index : op.slots.length,
+    statement : statement,
+    duration : 0,
+    status: Status.INITIAL
+  });
+  handles.set(op.name, op);
+  return op.name;
+}
+
+export function stopOp(handle: string) {
+  if (handles.has(handle)) {
+    console.log('STOPPING NOW!!!!!!!!!!!!!!!!!!!!');
+    handles.get(handle).status = Status.STOPPED;
+  }
+};
 
 export function dumpProgress(op : IParallelOp) {
   var avg = getBestAvg(op.t_started, op.timings);
@@ -445,99 +580,122 @@ export function dumpAllResults(allresult : IResult[]) {
   });
 }
 
+var index = 0;
+var allresults = [];
+var forks : child_process.ChildProcess[] = [];
+
+export function startSequence(executor, current_index = 0) {
+
+var hndl = startOpMonitor();
+
+//var tcp001 = 'select count(*), AVG(T1.L_QUANTITY), AVG(T1.L_DISCOUNT + T2.L_DISCOUNT), AVG(T2.L_EXTENDEDPRICE), T2.L_SHIPMODE FROM LINEITEM1 AS T1 JOIN LINEITEM1 AS T2 ON T1.L_SHIPMODE = T2.L_SHIPMODE WHERE T1.L_SHIPMODE <= \'FOB\' AND T1.L_QUANTITY > 2 AND T2.L_QUANTITY > 10 GROUP BY T2.L_SHIPMODE ORDER BY T2.L_SHIPMODE;';
+//var tcp001 = 'select count(*), AVG(T1.L_QUANTITY), AVG(T1.L_DISCOUNT + T2.L_DISCOUNT), AVG(T2.L_EXTENDEDPRICE), T2.L_SHIPMODE FROM LINEITEM1 AS T1 JOIN LINEITEM1 AS T2 ON T1.L_SHIPMODE = T2.L_SHIPMODE WHERE T1.L_SHIPMODE <= \'B\' AND T1.L_QUANTITY > 10 AND T2.L_QUANTITY > 10 GROUP BY T2.L_SHIPMODE ORDER BY T2.L_SHIPMODE;';
+
+//var tcp001 = 'select count(*), AVG(T1.L_QUANTITY), AVG(T1.L_DISCOUNT + T2.L_DISCOUNT), AVG(T2.L_EXTENDEDPRICE), T2.L_SHIPMODE FROM LINEITEM1 AS T1 JOIN LINEITEM1 AS T2 ON T1.L_SHIPMODE = T2.L_SHIPMODE WHERE T1.L_SHIPMODE <= \'B\' AND T1.L_QUANTITY > 10 AND T2.L_QUANTITY > 100 GROUP BY T2.L_SHIPMODE ORDER BY T2.L_SHIPMODE;';
+
+var tcp_001_4 = 'select count(*), AVG(T1.L_QUANTITY), AVG(T1.L_DISCOUNT + T2.L_DISCOUNT), AVG(T2.L_EXTENDEDPRICE), T2.L_SHIPMODE FROM LINEITEM1 AS T1 JOIN LINEITEM1 AS T2 ON T1.L_SHIPMODE = T2.L_SHIPMODE WHERE T1.L_SHIPMODE <= \'FOB\' AND T1.L_PARTKEY > 1000 AND T2.L_PARTKEY > 1000 AND T1.L_QUANTITY > 2 AND T2.L_QUANTITY > 10 GROUP BY T2.L_SHIPMODE ORDER BY T2.L_SHIPMODE;';
+var parq_1m_zip = 'select max(VCHAR50RNDVL), vchar4dic6, avg(UINT64_RND) from GEN_1M_PAR_ZIP group by VCHAR4DIC6;';
+
+//ALTERD
+//tcp_001_4 = 'select count(*), AVG(T1.L_QUANTITY), AVG(T1.L_DISCOUNT + T2.L_DISCOUNT), AVG(T2.L_EXTENDEDPRICE), T2.L_SHIPMODE FROM LINEITEM1 AS T1 JOIN LINEITEM1 AS T2 ON T1.L_SHIPMODE = T2.L_SHIPMODE WHERE T1.L_SHIPMODE <= \'FOB\' AND T1.L_PARTKEY > 1000 AND T2.L_PARTKEY > 1000 AND T1.L_QUANTITY > 2 AND T2.L_QUANTITY > 1000 GROUP BY T2.L_SHIPMODE ORDER BY T2.L_SHIPMODE;';
 
 
-export function startSequence(configFileName : string, testpool: Pool, current_index = 0) {
+var arr = [
+  { PAR : 1,  MAX_NR : 40, statement : '', TAG : 'TCP_P1'},
+  { PAR : 2,  MAX_NR : 40, statement : '', TAG : 'TCP_P1'},
+ // { PAR : 3,  MAX_NR : 40, statement : '', TAG : 'TCP_P1'},
+  { PAR : 4,  MAX_NR : 40, statement : '', TAG : 'TCP_P1'},
+ // { PAR : 6,  MAX_NR : 40, statement : '', TAG : 'TCP_P1'},
+  { PAR : 8,  MAX_NR : 40, statement : '', TAG : 'TCP_P1'},
+//  { PAR :10,  MAX_NR : 40, statement : '', TAG : 'TCP_P1'},
+  { PAR :12,  MAX_NR : 40, statement : '', TAG : 'TCP_P1'},
+  { PAR :16,  MAX_NR : 40, statement : '', TAG : 'TCP_P1'},
+  { PAR :20,  MAX_NR : 40, statement : '', TAG : 'TCP_P1'},
+  { PAR :32,  MAX_NR : 40, statement : '', TAG : 'TCP_P1'}
+];
+arr.forEach( entry => entry['TAG'] = 'TCP_P_' + entry.PAR );
+arr.forEach( entry => entry['TAG'] = 'P1Z_P_' + entry.PAR );
+arr.forEach( entry => entry['statement'] = tcp_001_4 );
+arr.forEach( entry => entry['statement'] = parq_1m_zip );
+arr.forEach( entry => entry['MAX_NR'] = 40 );
 
-  //var tcp001 = 'select count(*), AVG(T1.L_QUANTITY), AVG(T1.L_DISCOUNT + T2.L_DISCOUNT), AVG(T2.L_EXTENDEDPRICE), T2.L_SHIPMODE FROM LINEITEM1 AS T1 JOIN LINEITEM1 AS T2 ON T1.L_SHIPMODE = T2.L_SHIPMODE WHERE T1.L_SHIPMODE <= \'FOB\' AND T1.L_QUANTITY > 2 AND T2.L_QUANTITY > 10 GROUP BY T2.L_SHIPMODE ORDER BY T2.L_SHIPMODE;';
-  //var tcp001 = 'select count(*), AVG(T1.L_QUANTITY), AVG(T1.L_DISCOUNT + T2.L_DISCOUNT), AVG(T2.L_EXTENDEDPRICE), T2.L_SHIPMODE FROM LINEITEM1 AS T1 JOIN LINEITEM1 AS T2 ON T1.L_SHIPMODE = T2.L_SHIPMODE WHERE T1.L_SHIPMODE <= \'B\' AND T1.L_QUANTITY > 10 AND T2.L_QUANTITY > 10 GROUP BY T2.L_SHIPMODE ORDER BY T2.L_SHIPMODE;';
+if (current_index == 0) {
+  var max_parallel = arr.reduce(  (prev, entry) => Math.max(prev, entry.PAR), 0 );
 
-  //var tcp001 = 'select count(*), AVG(T1.L_QUANTITY), AVG(T1.L_DISCOUNT + T2.L_DISCOUNT), AVG(T2.L_EXTENDEDPRICE), T2.L_SHIPMODE FROM LINEITEM1 AS T1 JOIN LINEITEM1 AS T2 ON T1.L_SHIPMODE = T2.L_SHIPMODE WHERE T1.L_SHIPMODE <= \'B\' AND T1.L_QUANTITY > 10 AND T2.L_QUANTITY > 100 GROUP BY T2.L_SHIPMODE ORDER BY T2.L_SHIPMODE;';
-
-  var tcp_001_4 = 'select count(*), AVG(T1.L_QUANTITY), AVG(T1.L_DISCOUNT + T2.L_DISCOUNT), AVG(T2.L_EXTENDEDPRICE), T2.L_SHIPMODE FROM LINEITEM1 AS T1 JOIN LINEITEM1 AS T2 ON T1.L_SHIPMODE = T2.L_SHIPMODE WHERE T1.L_SHIPMODE <= \'FOB\' AND T1.L_PARTKEY > 1000 AND T2.L_PARTKEY > 1000 AND T1.L_QUANTITY > 2 AND T2.L_QUANTITY > 10 GROUP BY T2.L_SHIPMODE ORDER BY T2.L_SHIPMODE;';
-  var parq_1m_zip = 'select max(VCHAR50RNDVL), vchar4dic6, avg(UINT64_RND) from GEN_1M_PAR_ZIP group by VCHAR4DIC6;';
-
-  //ALTERD
-  //tcp_001_4 = 'select count(*), AVG(T1.L_QUANTITY), AVG(T1.L_DISCOUNT + T2.L_DISCOUNT), AVG(T2.L_EXTENDEDPRICE), T2.L_SHIPMODE FROM LINEITEM1 AS T1 JOIN LINEITEM1 AS T2 ON T1.L_SHIPMODE = T2.L_SHIPMODE WHERE T1.L_SHIPMODE <= \'FOB\' AND T1.L_PARTKEY > 1000 AND T2.L_PARTKEY > 1000 AND T1.L_QUANTITY > 2 AND T2.L_QUANTITY > 1000 GROUP BY T2.L_SHIPMODE ORDER BY T2.L_SHIPMODE;';
-
-
-  var arr = [
-    { PAR : 1,  MAX_NR : 40, statement : '', TAG : 'TCP_P1'},
-    { PAR : 2,  MAX_NR : 40, statement : '', TAG : 'TCP_P1'},
-  // { PAR : 3,  MAX_NR : 40, statement : '', TAG : 'TCP_P1'},
-    { PAR : 4,  MAX_NR : 40, statement : '', TAG : 'TCP_P1'},
-  // { PAR : 6,  MAX_NR : 40, statement : '', TAG : 'TCP_P1'},
-    { PAR : 8,  MAX_NR : 40, statement : '', TAG : 'TCP_P1'},
-  //  { PAR :10,  MAX_NR : 40, statement : '', TAG : 'TCP_P1'},
-    { PAR :12,  MAX_NR : 40, statement : '', TAG : 'TCP_P1'},
-    { PAR :16,  MAX_NR : 40, statement : '', TAG : 'TCP_P1'},
-    { PAR :20,  MAX_NR : 40, statement : '', TAG : 'TCP_P1'},
-    { PAR :32,  MAX_NR : 40, statement : '', TAG : 'TCP_P1'}
-  ];
-  arr.forEach( entry => entry['TAG'] = 'TCP_P_' + entry.PAR );
-  arr.forEach( entry => entry['TAG'] = 'P1Z_P_' + entry.PAR );
-  arr.forEach( entry => entry['statement'] = tcp_001_4 );
-  arr.forEach( entry => entry['statement'] = parq_1m_zip );
-  arr.forEach( entry => entry['MAX_NR'] = 40 );
-
-
-  if (current_index == 0) {
-    // create the forks!
-    var max_parallel = arr.reduce(  (prev, entry) => Math.max(prev, entry.PAR), 0 );
-    var nrForks = Math.ceil(max_parallel / 4);
-    forks = new Forks(nrForks , configFileName);
-    ;
-  }
-  var hndl = startOpMonitor(parexec);
-
-  var executors : ISQLExecutor[];
-  executors = SQLExec.getExecutors(testpool,4);
-  executors = executors.concat(forks.getExecutors(4));
-  parexec = new ParallelExec(executors);
-  //var handle = runner.startOpRepeat('SELECT COUNT(*) FROM T1;', 20);
-
-  //QPM     |BAD%   |PAR    |NR_PARALLEL_PLAN       |MAX_MEM        |CPU%   |MEM%   |QUERY_PER_MIN  |AGGR_PLAN_EXEC_DURATION
-  //10      |0      |4      |4      |165    |94     |173    |169    |2624
-  //QPM     |BAD%   |PAR    |PAR_P  |MAX_MEM        |CPU%   |MEM%   |QUERY_PER_MIN  |AGGR_PLAN_EXEC_DURATION
-  //10      |0      |8      |4      |174    |98     |171    |1      |2761
-
-
-  var showOp = dumpProgress;
-  var makeNext = function (op)  {
-    var res = dumpDone(op);
-    allresults.push(res);
-    dumpAllResults(allresults);
-    parexec.stopOp('monitor');
-    parexec.stopOp(handle);
-    parexec.triggerLoop();
-    //loopIt(executor);
-    ++index;
-    if(index < arr.length) {
-      console.log("*** INDEX");
-      startSequence(configFileName, testpool, index);
-    } else {
-      forks.stop();
-    }
-  };
-
-  handle = parexec.startOpRepeat( arr[current_index].TAG, arr[current_index].statement, arr[current_index].PAR, {continuous : true,  terminate_nr : arr[current_index].MAX_NR },
-    {
-      progress : showOp,
-      done : makeNext
+  for(var i = 0; i < Math.ceil(max_parallel / 4); ++i)
+  {
+    var cp = child_process.fork(`${__dirname}/../../runoneForked.js`,undefined, { silent: true });
+    forks.push( cp );
+    cp.on('message', (m) => {
+      console.log('received message ' +  m.handle + ' ' + m.idx + ' ' + m.result + ' ' + JSON.stringify(m.err));
+      debugger;
+      if(handles.has(m.handle)) {
+        console.log('have handle!')
+        var op = handles.get(m.handle);
+        if(op.slots.length > m.idx)
+        {
+          var run = op.slots[m.idx];
+          if(m.err) {
+            recordBad(op, run, m.err);
+          } else {
+            recordOk(op, run, { result : m.result});
+          }
+        } else
+        {
+          console.log('idx is out of bounds>> ' + op.slots.length);
+        }
+      } else {
+        console.log(' no handle found !!');
+      }
     });
+  }
+}
 
-  parexec.triggerLoop();
-  var handle;
-  setTimeout( function() {
-  }, 500);
+//var handle = runner.startOpRepeat('SELECT COUNT(*) FROM T1;', 20);
 
-  // beware, this only stops when all queries are completed;
-  /*
-  setTimeout( function() {
-    console.log('stopping now');
-    stopOp(handle);
-    loopIt(executor);
-  }, 200000);
-  */
+//QPM     |BAD%   |PAR    |NR_PARALLEL_PLAN       |MAX_MEM        |CPU%   |MEM%   |QUERY_PER_MIN  |AGGR_PLAN_EXEC_DURATION
+//10      |0      |4      |4      |165    |94     |173    |169    |2624
+//QPM     |BAD%   |PAR    |PAR_P  |MAX_MEM        |CPU%   |MEM%   |QUERY_PER_MIN  |AGGR_PLAN_EXEC_DURATION
+//10      |0      |8      |4      |174    |98     |171    |1      |2761
 
-}; /* startsequence*/
+
+var showOp = dumpProgress;
+var makeNext = function (op)  {
+  var res = dumpDone(op);
+  allresults.push(res);
+  dumpAllResults(allresults);
+  stopOp('monitor');
+  stopOp(handle);
+  loopIt(executor);
+  ++index;
+  if(index < arr.length) {
+    console.log("*** INDEX");
+    startSequence(executor, index);
+  } else {
+    // assume done
+    forks.forEach( (fork, idx) => console.log('fork' + idx + ' ' + fork.connected ));
+    forks.forEach( fork => fork.kill() );
+  }
+};
+
+handle = startOpRepeat( arr[current_index].TAG, arr[current_index].statement, arr[current_index].PAR, {continuous : true,  terminate_nr : arr[current_index].MAX_NR },
+  {
+    progress : showOp,
+    done : makeNext
+  });
+
+loopIt(executor);
+var handle;
+setTimeout( function() {
+}, 500);
+
+// beware, this only stops when all queries are completed;
+/*
+setTimeout( function() {
+  console.log('stopping now');
+  stopOp(handle);
+  loopIt(executor);
+}, 200000);
+*/
+
+};
