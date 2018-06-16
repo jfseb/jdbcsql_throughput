@@ -20,7 +20,7 @@
     "startConsole": "node main.js",
     "run": "nodeunit",
     "start": "node main",
-    "coverage" : "./node_modules/.bin/tap test/sqlexec/parallel_exec.nunit.js --cov",
+    "coverage" : "./node_modules/.bin/tap test\\ --cov",
     "coverageX": "./node_modules/.bin/nyc --source-map false nodeunit test/sqlexec",
     "coverreportplain": "./node_modules/.bin/nyc --source-map false report --reporter=text-lcov ",
     "coveralls": "./node_modules/.bin/nyc --source-map false report --reporter=text-lcov | coveralls"

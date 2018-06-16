@@ -212,7 +212,7 @@ var env = require('gulp-env');
  * This does not work, as we are somehow unable to
  * redirect the lvoc reporter output to a file
  */
-gulp.task('testcov', [], function () {
+gulp.task('nodeunit_testcov', [], function () {
   const envs = env.set({
     FSD_COVERAGE: '1',
     FSDEVSTART_COVERAGE: '1'
@@ -231,15 +231,15 @@ gulp.task('testcov', [], function () {
 
 var shell = require('gulp-shell');
 
-gulp.task('exec-tests', shell.task([
-  'tap test/sqlexec/parallel_exec.nunit.js',
+gulp.task('test', shell.task([
+  'tap test\\',
 ]));
 
-gulp.task('autotest', ['exec-tests'], function() {
-  gulp.watch(['app/**/*.js', 'test/**/*.js'], ['exec-tests']);
+gulp.task('autotest', ['test'], function() {
+  gulp.watch(['app/**/*.js', 'test/**/*.js'], ['test']);
 });
 
-gulp.task('test', ['tsc', 'babel'], function () {
+gulp.task('nodeunit_test', ['tsc', 'babel'], function () {
   gulp.src(['test/**/*.js'])
     .pipe(nodeunit({
       reporter: 'minimal'
@@ -308,7 +308,7 @@ gulp.task('graphviz', function () {
 });
 
 // Default Task
-gulp.task('default', ['tsc', 'babel', 'eslint', 'doc', 'exec-tests']);
+gulp.task('default', ['tsc', 'babel', 'eslint', 'doc', 'test']);
 gulp.task('build', ['tsc', 'babel']);
 gulp.task('allhome', ['default']);
-gulp.task('standard', ['tsc', 'babel', 'eslint', 'exec-tests']);
+gulp.task('standard', ['tsc', 'babel', 'eslint', 'test']);
