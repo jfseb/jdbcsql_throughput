@@ -25,7 +25,7 @@ before_script:
   - node --version
   - npm install
   - npm install -g gulp
-  - gulp
+  - gulp build
 script:
   - npm test
 after_script:
