@@ -1,11 +1,10 @@
 'use strict';
 var jinst = require('jdbc/lib/jinst');
-var _ = require('lodash');
 
 if (!jinst.isJvmCreated()) {
   console.log('adding stuff now');
   jinst.addOption('-Xrs');
-  var root = `${__dirname}/../../`;
+  var root = `${__dirname}/../../`; // eslint-disable-line
   jinst.setupClasspath([
     root + './drivers/hsqldb.jar',
     root + './drivers/derby.jar',
@@ -26,4 +25,4 @@ var config = (function () {
   };}
   )();
 
-exports.config_derby = config;
+exports.config = config;

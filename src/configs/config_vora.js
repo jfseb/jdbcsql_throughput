@@ -4,7 +4,7 @@ var jinst = require('jdbc/lib/jinst');
 if (!jinst.isJvmCreated()) {
   console.log('adding stuff now');
   jinst.addOption('-Xrs');
-  var root = `${__dirname}/../../`;
+  var root = `${__dirname}/../../`; // eslint-disable-line
   jinst.setupClasspath([
     // path to vora jdbc driver
     root + './drivers/acmereports.jar'
@@ -26,4 +26,4 @@ var config = (function () {
 }
 )();
 
-exports.config_vora = config;
+exports.config = config;

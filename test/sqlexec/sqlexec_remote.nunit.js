@@ -11,7 +11,7 @@ var t = require('tap');
 // setting classpath variables!
 
 console.log(root);
-const configFileName = 'gen/configs/config_derby.js';
+//const configFileName = 'gen/configs/config_derby.js';
 
 const config = require(root + '/configs/config_derby.js');
 
@@ -103,13 +103,5 @@ t.test('testSelect' , function(test) {
     forks.stop();
     test.end();
   });
-  /*
-  var waitTime = function () {
-    if(forks.getForksCount() > 0) {
-      setTimeout(waitTime, 100);
-    }
-  };
-  setTimeout(waitTime, 1000);
-  */
 });
 

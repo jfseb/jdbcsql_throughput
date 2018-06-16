@@ -232,8 +232,7 @@ var SQLExec = (function () {
                 callback(err);
                 return;
               }
-              if(results.length > 0) {
-              } else {
+              if(results.length <= 0) {
                 console.log(' no length result ');
               }
               callback(null, { conn: conn, result: results} );

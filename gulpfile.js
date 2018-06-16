@@ -228,6 +228,17 @@ gulp.task('testcov', [], function () {
     })).pipe(gulp.dest('./cov/lcov.info'));
 });
 
+
+var shell = require('gulp-shell');
+
+gulp.task('exec-tests', shell.task([
+  'tap test/sqlexec/parallel_exec.nunit.js',
+]));
+
+gulp.task('autotest', ['exec-tests'], function() {
+  gulp.watch(['app/**/*.js', 'test/**/*.js'], ['exec-tests']);
+});
+
 gulp.task('test', ['tsc', 'babel'], function () {
   gulp.src(['test/**/*.js'])
     .pipe(nodeunit({
@@ -297,7 +308,7 @@ gulp.task('graphviz', function () {
 });
 
 // Default Task
-gulp.task('default', ['tsc', 'babel', 'eslint', 'doc', 'test']);
+gulp.task('default', ['tsc', 'babel', 'eslint', 'doc', 'exec-tests']);
 gulp.task('build', ['tsc', 'babel']);
 gulp.task('allhome', ['default']);
-gulp.task('standard', ['tsc', 'babel', 'eslint', 'test']);
+gulp.task('standard', ['tsc', 'babel', 'eslint', 'exec-tests']);

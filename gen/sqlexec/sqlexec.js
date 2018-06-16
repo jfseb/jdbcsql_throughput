@@ -81,7 +81,7 @@ var SQLExec = function () {
     var r = {
       pool: testpool,
       execStatement: function execStatement(statement) {
-        return SQLExec.prototype.runStatementFromPool(statement, this.pool);
+        return SQLExec.prototype.runStatementFromPool(statement, testpool);
       }
     };
     return r;
@@ -221,7 +221,7 @@ var SQLExec = function () {
                 callback(err);
                 return;
               }
-              if (results.length > 0) {} else {
+              if (results.length <= 0) {
                 console.log(' no length result ');
               }
               callback(null, { conn: conn, result: results });

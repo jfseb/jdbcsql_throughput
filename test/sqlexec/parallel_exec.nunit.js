@@ -16,6 +16,7 @@ console.log(root);
 
 // strongly recommended to load this first, as it brings up the jvm,
 // setting classpath variables!
+
 const config = require(root + '/configs/config_derby.js').config;
 
 const ParallelPool = require(root + '/sqlexec/parallel_pool.js').ParallelPool;
@@ -31,7 +32,6 @@ console.log('config' + JSON.stringify(config));
 
 console.log('config' + JSON.stringify(config));
 var testpool; // = new Pool(config);
-var executor; // = new SQLExec.SQLExec();
 var ParallelExec = require(root + '/sqlexec/parallel_exec.js').ParallelExec;
 
 var Status = require(root + '/constants.js').Status;
@@ -81,7 +81,6 @@ function setup(tap) {
 function tearDown(t) {
   tap.test('teardown', t => {
     testpool = undefined;
-    executor = undefined;
     t.end(); });
 }
 
@@ -97,10 +96,6 @@ tap.test('testParallelExecWithCountTerminate' , function(test) {
   var received = 0;
   function cbProgress(op) {
     // here we still are part of the handles
-
-    if(received < 10) {
-
-    }
     ++received;
     test.deepEqual(op.metrics.count_total, received, 'test count');
   }
