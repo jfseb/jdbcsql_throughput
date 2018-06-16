@@ -1,3 +1,6 @@
+
+var tap = require('tap');
+
 var process = require('process');
 var root = (process.env.FSD_COVERAGE) ? '../../gen_cov' : '../../gen';
 // var _ = require('lodash');
@@ -18,7 +21,7 @@ console.log('config' + JSON.stringify(config));
 // var HTMLConnector = require(root + '/ui/htmlconnector.js')
 // const SmartDialog = require(root + '/bot/smartdialog.js')
 
-exports.testNotExistTable = function(test) {
+tap.test('testNotExistTable', function(test) {
   console.log('config' + JSON.stringify(config));
   var testpool = new Pool(config);
   var executor = new SQLExec.SQLExec();
@@ -38,10 +41,9 @@ exports.testNotExistTable = function(test) {
     test.deepEqual(err, err);
     test.done();
   });
-};
+});
 
-exports.testAsciiTable = function(test) {
-
+tap.test('testAsciiTable', function(test) {
   const exec = new SQLExec.SQLExec();
 
   var res = exec.makeAsciiTable( [{ ID: 1, Obj : 'def'},
@@ -59,11 +61,11 @@ exports.testAsciiTable = function(test) {
 
   test.deepEqual(res, expect);4;
 
-  test.done();
-};
+  test.end();
+});
 
 
-exports.testAsciiTable2 = function(test) {
+tap.test('testAsciiTable2', function(test) {
 
   const exec = new SQLExec.SQLExec();
 
@@ -83,21 +85,23 @@ exports.testAsciiTable2 = function(test) {
   test.deepEqual(res, expect);4;
 
   test.done();
-};
+});
 
 
-exports.testGetExecutors = function(test) {
+tap.test('testGetExecutors', function(test) {
   console.log('config' + JSON.stringify(config));
   var testpool = new Pool(config);
-  var executors = SQLExec.getExecutors(testpool, 4);
+  var executors = new SQLExec.SQLExec().getExecutors(testpool, 4);
   test.deepEqual(executors.length,4);
-};
+  test.end();
+});
 
-exports.testCreateDelete2 = function(test) {
+tap.test('testCreateDelete2', function(test) {
   console.log('config' + JSON.stringify(config));
   var testpool = new Pool(config);
   var executor = new SQLExec.SQLExec();
   var s1 = 'CREATE TABLE IF NOT EXISTS T1 ( id int primary key, abc varchar(10));';
+  var s1d = 'DELETE FROM T1;';
   var s2a = 'INSERT INTO T1 (id, abc) values (1, \'def\');';
   var s2b = 'INSERT INTO T1 (id, abc) values (2, \'hij\');';
   var s3 = 'DELETE FROM T1;';
@@ -105,6 +109,8 @@ exports.testCreateDelete2 = function(test) {
 
   executor.runStatementFromPool(s1, testpool).then( function(T)
   {
+    return executor.runStatementFromPool(s1d, testpool);
+  }).then(function (T) {
     return executor.runStatementFromPool(s3, testpool);
   }).then(function (T) {
     return executor.runStatementFromPool(s2a, testpool);
@@ -121,9 +127,9 @@ exports.testCreateDelete2 = function(test) {
     test.deepEqual(err, 'should not get here', 'rejection');
     test.done();
   });
-};
+});
 
-exports.testSQL2 = function (test) {
+tap.test('testSQL2', function (test) {
   console.log('config' + JSON.stringify(config));
   var callback = function(err, res) {
     if(err) {
@@ -178,7 +184,7 @@ exports.testSQL2 = function (test) {
     debuglog('aaa');
     test.deepEqual('a', 'a');
   });
-};
+});
 
 /*
 module.exports = {
