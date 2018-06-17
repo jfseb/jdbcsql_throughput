@@ -25,6 +25,7 @@ before_script:
   - node --version
   - npm install
   - npm install -g gulp
+  - npm install -g cross-env
   - cross-env NODE_ENV=test
   - gulp build
 script:
