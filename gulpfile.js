@@ -46,15 +46,15 @@ gulp.task('tsc', function () {
     .pipe(tsProject());
 
   return tsResult.js
-//    .pipe(babel({
-//      comments: true,
-//      presets: ['es2015']
-//    }))
+  //    .pipe(babel({
+  //      comments: true,
+  //      presets: ['es2015']
+  //    }))
     // .pipe( ... ) // You can use other plugins that also support gulp-sourcemaps
     .pipe(sourcemaps.write('.',{
       sourceRoot : function(file) {
-       // file.sourceMap.sources[0] = '/projects/nodejs/botbuilder/fdevstart/src/' + file.sourceMap.sources[0];
-    //  file.sourceMap.sources[0] = './src/' + file.sourceMap.sources[0];
+        // file.sourceMap.sources[0] = '/projects/nodejs/botbuilder/fdevstart/src/' + file.sourceMap.sources[0];
+        //  file.sourceMap.sources[0] = './src/' + file.sourceMap.sources[0];
         //console.log('here is************* file' + JSON.stringify(file, undefined, 2));
         return 'ABC';
       },
@@ -62,8 +62,8 @@ gulp.task('tsc', function () {
         console.log('here we remap' + src);
         return '/projects/nodejs/botbuilder/fdevstart/' + src;
       }}
-      )) // ,  { sourceRoot: './' } ))
-      // Now the sourcemaps are added to the .js file
+    )) // ,  { sourceRoot: './' } ))
+  // Now the sourcemaps are added to the .js file
     .pipe(gulp.dest('gen'));
 });
 
@@ -80,13 +80,13 @@ gulp.task('tscx', function () {
     .pipe(tsProject());
 
   return tsResult
-       .pipe(babel({
-         comments: true,
-         presets: ['es2015']
-       }))
+    .pipe(babel({
+      comments: true,
+      presets: ['es2015']
+    }))
     // .pipe( ... ) // You can use other plugins that also support gulp-sourcemaps
-      .pipe(sourcemaps.write()) // ,  { sourceRoot: './' } ))
-      // Now the sourcemaps are added to the .js file
+    .pipe(sourcemaps.write()) // ,  { sourceRoot: './' } ))
+  // Now the sourcemaps are added to the .js file
     .pipe(gulp.dest('gen2'));
 });
 
@@ -173,7 +173,7 @@ gulp.task('eslint', () => {
 
 gulp.task('graphviz', function () {
   gulp.src('model/*.gv')
-  .pipe(gulp_shell([ 'dot -O -Tjpeg <%= file.path %>']));
+    .pipe(gulp_shell([ 'dot -O -Tjpeg <%= file.path %>']));
 });
 
 // Default Task

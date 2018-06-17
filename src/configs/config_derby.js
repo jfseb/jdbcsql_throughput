@@ -23,6 +23,6 @@ var config = (function () {
     maxpoolsize: 50
     //  properties : {user: '', password : ''}
   };}
-  )();
+)();
 
 exports.config = config;

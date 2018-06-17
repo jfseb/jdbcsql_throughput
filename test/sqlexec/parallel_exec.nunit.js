@@ -100,8 +100,8 @@ tap.test('testParallelExecWithCountTerminate' , function(test) {
     test.deepEqual(op.metrics.count_total, received, 'test count');
   }
   var handle = parallel_exec.startOpRepeat( 'ATAG',
-  'SELECT * FROM T1;',
-  3,
+    'SELECT * FROM T1;',
+    3,
     { continuous : true,
       terminate_nr : 10 },
     {

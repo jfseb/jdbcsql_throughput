@@ -36,8 +36,8 @@ var SQLExec = (function () {
 
   //SQLExec.prototype.config = config;
 
-//  var java = jinst.getInstance();
-//  java.callStaticMethodSync('java.lang.Class', 'forName', 'com.sap.vora.jdbc.VoraDriver');
+  //  var java = jinst.getInstance();
+  //  java.callStaticMethodSync('java.lang.Class', 'forName', 'com.sap.vora.jdbc.VoraDriver');
 
 
   SQLExec.prototype.aFunction = function (answerHook, id) {
@@ -49,10 +49,10 @@ var SQLExec = (function () {
   SQLExec.prototype.makeAsciiTable = function(obj) {
     const table1 = new AsciiTable();
     table1.setHeading('a','b','c')
-    .addRow('a', 'apple', 'Some longer string');
+      .addRow('a', 'apple', 'Some longer string');
     table1.addRow('b', 'banana', 'hi')
-    .addRow('c', 'carrot', 'meow')
-    .addRow('e', 'elephants');
+      .addRow('c', 'carrot', 'meow')
+      .addRow('e', 'elephants');
     console.log(table1.toString());
     const table = new AsciiTable();
 
@@ -72,7 +72,7 @@ var SQLExec = (function () {
     });
     return table.toString();
   };
-   /* table
+  /* table
     .addRow('a', 'apple', 'Some longer string')
     .addRow('b', 'banana', 'hi')
     .addRow('c', 'carrot', 'meow')
@@ -90,7 +90,7 @@ var SQLExec = (function () {
     return r;
   };
 
-/**
+  /**
  * "Fixes the node-jdbc collect to also accept "
  * @param {*} callback
  */
@@ -218,10 +218,10 @@ var SQLExec = (function () {
             callback(err);
             return;
           }
-       //statement.executeQuery('CREATE TABLE IF NOT EXISTS T1 ( id int primary key, abc varchar(10));'
-        //statement.executeQuery('INSERT INTO T1 (id, abc) values (2, \'def\');'
+          //statement.executeQuery('CREATE TABLE IF NOT EXISTS T1 ( id int primary key, abc varchar(10));'
+          //statement.executeQuery('INSERT INTO T1 (id, abc) values (2, \'def\');'
           sqlstatement.executeQuery(statement, function(err, resultSet)
-        {
+          {
             if(err) {
               callback(err);
               return;

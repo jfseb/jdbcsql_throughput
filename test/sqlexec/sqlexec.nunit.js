@@ -47,7 +47,7 @@ tap.test('testAsciiTable', function(test) {
   const exec = new SQLExec.SQLExec();
 
   var res = exec.makeAsciiTable( [{ ID: 1, Obj : 'def'},
-   { ID: 3, Obj : 'def'}]);
+    { ID: 3, Obj : 'def'}]);
 
   console.log(res);
 
@@ -70,7 +70,7 @@ tap.test('testAsciiTable2', function(test) {
   const exec = new SQLExec.SQLExec();
 
   var res = exec.makeAsciiTable( [{ ID: 1.123, Obj : 'def'},
-   { ID: 3.34, Obj : 'def'}]);
+    { ID: 3.34, Obj : 'def'}]);
 
   console.log(res);
 
@@ -160,26 +160,26 @@ tap.test('testSQL2', function (test) {
       callback(err);
       return;
     }
-     //statement.executeQuery('CREATE TABLE IF NOT EXISTS T1 ( id int primary key, abc varchar(10));'
+      //statement.executeQuery('CREATE TABLE IF NOT EXISTS T1 ( id int primary key, abc varchar(10));'
       //statement.executeQuery('INSERT INTO T1 (id, abc) values (2, \'def\');'
-      statement.executeQuery('SELECT * FROM T1;'
-   , function(err, resultSet)
+    statement.executeQuery('SELECT * FROM T1;'
+      , function(err, resultSet)
       {
-     if(err) {
-       callback(err);
-       return;
-     }
-     resultSet.toObjArray(function(err, results) {
-       if(err) {
-         callback(err);
-         return;
-       }
-       if(results.length > 0) {
-         console.log('ID: ' + JSON.stringify(results));
-       }
-       callback(null, results);
-     });
-   });
+        if(err) {
+          callback(err);
+          return;
+        }
+        resultSet.toObjArray(function(err, results) {
+          if(err) {
+            callback(err);
+            return;
+          }
+          if(results.length > 0) {
+            console.log('ID: ' + JSON.stringify(results));
+          }
+          callback(null, results);
+        });
+      });
     });
     debuglog('aaa');
     test.deepEqual('a', 'a');

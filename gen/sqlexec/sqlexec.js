@@ -71,10 +71,10 @@ var SQLExec = function () {
     return table.toString();
   };
   /* table
-   .addRow('a', 'apple', 'Some longer string')
-   .addRow('b', 'banana', 'hi')
-   .addRow('c', 'carrot', 'meow')
-   .addRow('e', 'elephants')
+    .addRow('a', 'apple', 'Some longer string')
+    .addRow('b', 'banana', 'hi')
+    .addRow('c', 'carrot', 'meow')
+    .addRow('e', 'elephants')
   */
 
   SQLExec.prototype.makeRunner = function (testpool) {
@@ -88,9 +88,9 @@ var SQLExec = function () {
   };
 
   /**
-   * "Fixes the node-jdbc collect to also accept "
-   * @param {*} callback
-   */
+  * "Fixes the node-jdbc collect to also accept "
+  * @param {*} callback
+  */
   var ResultSet_toObjectIter = function ResultSet_toObjectIter(callback) {
     var self = this;
 
