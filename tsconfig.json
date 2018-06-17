@@ -15,10 +15,11 @@
         "noImplicitAny": false,
         "removeComments": false,
         "noLib": false,
+        //"rootDir" : "src",
         "outDir" : "gen_tsc",
         "skipLibCheck": true,
-       // "sourceMap" : true,
-        "inlineSourceMap": true,
+        "sourceMap" : true,
+        //"inlineSourceMap": true,
         "preserveConstEnums": true,
          //"jsx": "react",
         "suppressImplicitAnyIndexErrors": true
@@ -30,12 +31,12 @@
     ],
     "files": [
         "src/interfaces.d.ts",
-        "src/sqlexec/runinfork.ts",
-        "src/sqlexec/parallel_exec.ts",
-        "src/sqlexec/parallel_pool.ts",
-        "src/sqlexec/sqlexec_remote.ts",
-        "src/sqlexec/averages.ts",
-        "src/aged_averages.ts",
+        "src/runinfork.ts",
+        "src/parallel_exec.ts",
+        "src/parallel_pool.ts",
+        "src/sqlexec.ts",
+        "src/sqlexec_remote.ts",
+        "src/averages.ts",
         "src/constants.ts"
     ],
     "exclude": [

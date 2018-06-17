@@ -3,9 +3,9 @@
 var root = (process.env.FSD_COVERAGE) ? './gen_cov' : './gen';
 
 var debug = require('debug');
-const debuglog = debug('main');
+//const debuglog = debug('main');
 
-const SQLExec = require(root + '/sqlexec/sqlexec.js');
+const SQLExec = require(root + '/sqlexec.js');
 
 var config = new SQLExec.SQLExec().config;
 var Pool = require('jdbc');
@@ -22,7 +22,7 @@ testpool.initialize( function () {} );
 // v2client -c127.0.0.1 -s sample_data/tcp_viewdef.sql
 
 var executor = new SQLExec.SQLExec().makeRunner(testpool);
-const runner = require(root + '/sqlexec/averages.js')
+const runner = require(root + '/averages.js');
 
 //var hndl = runner.startOpSequential('CREATE TABLE IF NOT EXISTS T11 ( id int , abc varchar(10));');
 
@@ -30,7 +30,7 @@ const runner = require(root + '/sqlexec/averages.js')
 // hndl = runner.startOpSequential('INSERT INTO T11 (id, abc) values (' + ( i + 900 + Date.now() % 10000000)  + ', \'zy' + i +' sf\');');
 //}
 
-runner.startSequence(executor); 
+runner.startSequence(executor);
 
 
 // we sample every T / 20 and N / 20  (if specified)

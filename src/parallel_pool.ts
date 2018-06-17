@@ -10,13 +10,13 @@ import { ISQLExecutor, IParallelOp, Status,
   Mode,
   IRun,
   Metrics,
-  IMetrics,
   ICallbacks,
+  IMetrics,
   IOptions,
   IParallelExecutor,
   ITimingMap,
   IResultRec,
-  ITimingRec } from '../constants';
+  ITimingRec } from './constants';
 
 
 export class ParallelPool {

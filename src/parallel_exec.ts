@@ -25,7 +25,7 @@ ITimingMap,
 IOptions,
 IResultRec,
 ITimingRec,
-IParallelExecutor} from '../constants';
+IParallelExecutor} from './constants';
 
 var handles = new Map<string, IParallelOp>();
 

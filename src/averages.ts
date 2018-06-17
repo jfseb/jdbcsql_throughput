@@ -27,7 +27,7 @@ import { ISQLExecutor, IParallelOp, Status,
   IParallelExecutor,
   ITimingMap,
   IResultRec,
-  ITimingRec } from '../constants';
+  ITimingRec } from './constants';
 
 var handles = new Map<string, IParallelOp>();
 

@@ -1,5 +1,5 @@
-var process = require('process');
-var root = (process.env.FSD_COVERAGE) ? '../../gen_cov' : '../../gen';
+
+var root = '../gen';
 // var _ = require('lodash');
 // var debuglog = require('debug')('plainRecoginizer.nunit')
 
@@ -15,7 +15,7 @@ console.log(root);
 
 const config = require(root + '/configs/config_derby.js');
 
-const SQLExec = require(root + '/sqlexec/sqlexec_remote.js');
+const SQLExec = require(root + '/sqlexec_remote.js');
 
 console.log('config' + JSON.stringify(config));
 // var HTMLConnector = require(root + '/ui/htmlconnector.js')

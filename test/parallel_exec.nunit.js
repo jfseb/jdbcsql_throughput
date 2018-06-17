@@ -1,8 +1,7 @@
-var process = require('process');
-var root = (process.env.FSD_COVERAGE) ? '../../gen_cov' : '../../gen';
+
+var root =  '../gen';
 // var _ = require('lodash');
 // var debuglog = require('debug')('plainRecoginizer.nunit')
-
 //var debug = require('debug');
 //const debuglog = debug('sqlexec.nunit');
 
@@ -18,21 +17,21 @@ console.log(root);
 // setting classpath variables!
 
 const config = require(root + '/configs/config_derby.js').config;
+var ParallelExec = require(root + '/parallel_exec.js').ParallelExec;
+const ParallelPool = require(root + '/parallel_pool.js').ParallelPool;
 
-const ParallelPool = require(root + '/sqlexec/parallel_pool.js').ParallelPool;
-
-//const SQLExec = require(root + '/sqlexec/sqlexec_remote.js');
+//const SQLExec = require(root + '/qlexec_remote.js');
 
 console.log('config' + JSON.stringify(config));
 
 var Pool = require('jdbc');
-const SQLExec = require(root + '/sqlexec/sqlexec.js');
+const SQLExec = require(root + '/sqlexec.js');
 
 console.log('config' + JSON.stringify(config));
 
 console.log('config' + JSON.stringify(config));
 var testpool; // = new Pool(config);
-var ParallelExec = require(root + '/sqlexec/parallel_exec.js').ParallelExec;
+
 
 var Status = require(root + '/constants.js').Status;
 

@@ -20,7 +20,7 @@ testpool.initialize( function () {} );
 // v2client -c127.0.0.1 -s sample_data/tcp_viewdef.sql
 
 var executor = new SQLExec.SQLExec().makeRunner(testpool);
-const runner = require(root + '/sqlexec/averages.js')
+const runner = require(root + '/averages.js');
 
 // this executable listens to single query requests (without any synchronization etc)
 // and runs them
@@ -30,16 +30,16 @@ process.on('message', (m) => {
     return;
   }
   executor.execStatement(m.statement).then( res =>
-    {
-      var m2 =  { handle : m.handle, idx : m.idx, result : res.result , err : undefined };
-      console.log(' in fork send result' + JSON.stringify(m2));
-      process.send(m2);
-    }
+  {
+    var m2 =  { handle : m.handle, idx : m.idx, result : res.result , err : undefined };
+    console.log(' in fork send result' + JSON.stringify(m2));
+    process.send(m2);
+  }
   ).catch( err => {
     var m2 =  { handle : m.handle, idx : m.idx, result : undefined, err : err};
     console.log(' in fork send result' + JSON.stringify(m2));
-    process.send( m2 ); 
+    process.send( m2 );
   }
-)
+  );
 });
 console.log('I HAVE REGISTERD THE HANDLER!');

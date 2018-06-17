@@ -90,7 +90,7 @@ export class Forks {
   }
 };
 
-import { ISQLExecutor } from '../constants';
+import { ISQLExecutor } from './constants';
 
 export class SQLExecRemote {
     makeRunner( fork : child_process.ChildProcess ) : ISQLExecutor {

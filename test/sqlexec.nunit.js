@@ -1,8 +1,6 @@
 
 var tap = require('tap');
-
-var process = require('process');
-var root = (process.env.FSD_COVERAGE) ? '../../gen_cov' : '../../gen';
+var root ='../gen';
 // var _ = require('lodash');
 // var debuglog = require('debug')('plainRecoginizer.nunit')
 
@@ -15,7 +13,7 @@ const config = require(root + '/configs/config_derby.js').config;
 
 var Pool = require('jdbc');
 
-const SQLExec = require(root + '/sqlexec/sqlexec.js');
+const SQLExec = require(root + '/sqlexec.js');
 
 console.log('config' + JSON.stringify(config));
 // var HTMLConnector = require(root + '/ui/htmlconnector.js')

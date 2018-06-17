@@ -26,3 +26,4 @@ var config = function () {
 }();
 
 exports.config = config;
+//# sourceMappingURL=config_vora.js.map

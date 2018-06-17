@@ -39,7 +39,7 @@ const babel = require('gulp-babel');
  * @input srcDir
  * @output genDir
  */
-gulp.task('tsc', function () {
+gulp.task('tscO', function () {
   var tsProject = ts.createProject('tsconfig.json', { inlineSourceMap: true });
   var tsResult = tsProject.src() // gulp.src('lib/*.ts')
     .pipe(sourcemaps.init()) // This means sourcemaps will be generated
@@ -67,6 +67,57 @@ gulp.task('tsc', function () {
     .pipe(gulp.dest('gen'));
 });
 
+/**
+ * compile tsc (including srcmaps)
+ * @input srcDir
+ * @output genDir
+ */
+gulp.task('tsc', function () {
+  var tsProject = ts.createProject('tsconfig.json', { inlineSourceMap: false });
+  var tsResult = tsProject.src() // gulp.src('lib/*.ts')
+    .pipe(sourcemaps.init()) // This means sourcemaps will be generated
+    .pipe(tsProject());
+  return tsResult.js
+  //    .pipe(babel({
+  //      comments: true,
+  //      presets: ['es2015']
+  //    }))
+    // .pipe( ... ) // You can use other plugins that also support gulp-sourcemaps
+    .pipe(sourcemaps.write('.', {
+      includeContent : true,
+      sourceRoot: '.',
+      mapSources: function(src, more) {
+        console.log('here we remap >>>' + src + ' '  +  JSON.stringify(more.sourceMap.file));
+        //
+        return src;
+        //return '/projects/nodejs/jdbcsql_throughput/' + src;
+      }
+
+
+    })) // ,  { sourceRoot: './' } ))
+  // Now the sourcemaps are added to the .js file
+    .pipe(gulp.dest('gen'));
+});
+
+
+/**
+ * compile tsc (including srcmaps)
+ * @input srcDir
+ * @output genDir
+ */
+gulp.task('tscNSC', function () {
+  var tsProject = ts.createProject('tsconfig.json', { inlineSourceMap: true });
+  var tsResult = tsProject.src() // gulp.src('lib/*.ts')
+    .pipe(tsProject());
+  return tsResult.js
+  //    .pipe(babel({
+  //      comments: true,
+  //      presets: ['es2015']
+  //    }))
+  // .pipe( ... ) // You can use other plugins that also support gulp-sourcemaps
+  // Now the sourcemaps are added to the .js file
+    .pipe(gulp.dest('gen'));
+});
 
 /**
  * compile tsc (including srcmaps)
@@ -85,7 +136,7 @@ gulp.task('tscx', function () {
       presets: ['env']
     }))
     // .pipe( ... ) // You can use other plugins that also support gulp-sourcemaps
-    .pipe(sourcemaps.write()) // ,  { sourceRoot: './' } ))
+    .pipe(sourcemaps.write({ sourceRoot : 'src' })) // ,  { sourceRoot: './' } ))
   // Now the sourcemaps are added to the .js file
     .pipe(gulp.dest('gen2'));
 });
@@ -113,7 +164,6 @@ gulp.task('tsc2', function () {
 });
 */
 
-
 var jsdoc = require('gulp-jsdoc3');
 
 gulp.task('doc', function (cb) {
@@ -131,14 +181,14 @@ var imgDest = 'gen';
 //
 gulp.task('babel', ['tsc'], function () {
   // Add the newer pipe to pass through newer images only
-  return gulp.src([imgSrc, 'gen_tsc/**/*.js'])
+  return gulp.src([imgSrc, 'gen_tsc/**/*.js'], { base : 'src'})
     .pipe(sourcemaps.init())
     .pipe(newer(imgDest))
     .pipe(babel({
       comments: true,
       presets: ['env']
     }))
-    .pipe(sourcemaps.write('.'))
+    .pipe(sourcemaps.write('.', { sourceRoot : '../'}))
     .pipe(gulp.dest('gen'));
 });
 

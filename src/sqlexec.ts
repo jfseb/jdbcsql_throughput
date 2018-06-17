@@ -3,11 +3,94 @@
 var AsciiTable = require('ascii-table');
 var _ = require('lodash');
 
-var Pool = require('jdbc').Pool;
+var TPool = require('jdbc').Pool;
+
+import { ISQLExecutor} from './constants';
 
 
 
-var SQLExec = (function () {
+
+  /**
+ * "Fixes the node-jdbc collect to also accept "
+ * @param {*} callback
+ */
+var ResultSet_toObjectIter = function (callback) {
+  var self = this;
+
+  self.getMetaData(function (err, rsmd) {
+    if (err) {
+      return callback(err);
+    } else {
+      var colsmetadata = [];
+
+      rsmd.getColumnCount(function (err, colcount) {
+
+        if (err)
+          return callback(err);
+
+        // Get some column metadata.
+        _.each(_.range(1, colcount + 1), function (i) {
+          colsmetadata.push({
+            // modification, fall back to column name
+            label:  rsmd._rsmd.getColumnLabelSync(i) || rsmd._rsmd.getColumnNameSync(i),
+            type: rsmd._rsmd.getColumnTypeSync(i)
+          });
+        });
+
+        callback(null, {
+          labels: _.map(colsmetadata, 'label'),
+          types: _.map(colsmetadata, 'type'),
+          rows: {
+            next: function () {
+              var nextRow;
+              try {
+                nextRow = self._rs.nextSync(); // this row can lead to Java RuntimeException - sould be cathced.
+              }
+              catch (error) {
+                callback(error);
+              }
+              if (!nextRow) {
+                return {
+                  done: true
+                };
+              }
+
+              var result = {};
+
+              // loop through each column
+              _.each(_.range(1, colcount + 1), function (i) {
+                var cmd = colsmetadata[i - 1];
+                var type = self._types[cmd.type] || 'String';
+                var getter = 'get' + type + 'Sync';
+
+                if (type === 'Date' || type === 'Time' || type === 'Timestamp') {
+                  var dateVal = self._rs[getter](i);
+                  result[cmd.label] = dateVal ? dateVal.toString() : null;
+                } else {
+                  // If the column is an integer and is null, set result to null and continue
+                  if (type === 'Int' && _.isNull(self._rs.getObjectSync(i))) {
+                    result[cmd.label] = null;
+                    return;
+                  }
+
+                  result[cmd.label] = self._rs[getter](i);
+                }
+              });
+
+              return {
+                value: result,
+                done: false
+              };
+            }
+          }
+        });
+      });
+    }
+  });
+};
+
+export class SQLExec {
+  Pool : any;
   /*
   var config = {
 //    url: 'jdbc:hsqldb:hsql://localhost/xdb',
@@ -24,29 +107,11 @@ var SQLExec = (function () {
 //    properties : {user: '', password : ''}
   };
   */
-  function SQLExec (options) {
-    this.replyCnt = 0;
-    this.answerHooks = {};
-    this.user = options && options.user || 'user1';
-    this.bot = options && options.bot || 'fdevstart';
-  // this.conversationID = options && options.conversationid || ('' + Date.now())
+  constructor(options : any) {
+    this.Pool = TPool;
   }
 
-  SQLExec.prototype.Pool = Pool;
-
-  //SQLExec.prototype.config = config;
-
-  //  var java = jinst.getInstance();
-  //  java.callStaticMethodSync('java.lang.Class', 'forName', 'com.sap.vora.jdbc.VoraDriver');
-
-
-  SQLExec.prototype.aFunction = function (answerHook, id) {
-    if (id) {
-      this.answerHooks[id] = answerHook;
-    }
-  };
-
-  SQLExec.prototype.makeAsciiTable = function(obj) {
+  makeAsciiTable(obj : any) {
     const table1 = new AsciiTable();
     table1.setHeading('a','b','c')
       .addRow('a', 'apple', 'Some longer string');
@@ -80,96 +145,18 @@ var SQLExec = (function () {
 */
 
 
-  SQLExec.prototype.makeRunner = function(testpool) {
+  makeRunner = function(testpool) : ISQLExecutor {
+    var that = this;
     var r = {
       pool: testpool ,
       execStatement : function(statement) {
-        return SQLExec.prototype.runStatementFromPool(statement, testpool);
+        return that.runStatementFromPool(statement, testpool);
       }
     };
     return r;
   };
 
-  /**
- * "Fixes the node-jdbc collect to also accept "
- * @param {*} callback
- */
-  var ResultSet_toObjectIter = function (callback) {
-    var self = this;
-
-    self.getMetaData(function (err, rsmd) {
-      if (err) {
-        return callback(err);
-      } else {
-        var colsmetadata = [];
-
-        rsmd.getColumnCount(function (err, colcount) {
-
-          if (err)
-            return callback(err);
-
-          // Get some column metadata.
-          _.each(_.range(1, colcount + 1), function (i) {
-            colsmetadata.push({
-              // modification, fall back to column name
-              label:  rsmd._rsmd.getColumnLabelSync(i) || rsmd._rsmd.getColumnNameSync(i),
-              type: rsmd._rsmd.getColumnTypeSync(i)
-            });
-          });
-
-          callback(null, {
-            labels: _.map(colsmetadata, 'label'),
-            types: _.map(colsmetadata, 'type'),
-            rows: {
-              next: function () {
-                var nextRow;
-                try {
-                  nextRow = self._rs.nextSync(); // this row can lead to Java RuntimeException - sould be cathced.
-                }
-                catch (error) {
-                  callback(error);
-                }
-                if (!nextRow) {
-                  return {
-                    done: true
-                  };
-                }
-
-                var result = {};
-
-                // loop through each column
-                _.each(_.range(1, colcount + 1), function (i) {
-                  var cmd = colsmetadata[i - 1];
-                  var type = self._types[cmd.type] || 'String';
-                  var getter = 'get' + type + 'Sync';
-
-                  if (type === 'Date' || type === 'Time' || type === 'Timestamp') {
-                    var dateVal = self._rs[getter](i);
-                    result[cmd.label] = dateVal ? dateVal.toString() : null;
-                  } else {
-                    // If the column is an integer and is null, set result to null and continue
-                    if (type === 'Int' && _.isNull(self._rs.getObjectSync(i))) {
-                      result[cmd.label] = null;
-                      return;
-                    }
-
-                    result[cmd.label] = self._rs[getter](i);
-                  }
-                });
-
-                return {
-                  value: result,
-                  done: false
-                };
-              }
-            }
-          });
-        });
-      }
-    });
-  };
-
-  SQLExec.prototype.getExecutors = function(pool, nr) {
+  getExecutors(pool, nr : number)  : ISQLExecutor[]{
     var u = new SQLExec(pool);
     var res = [];
     for(var i = 0; i < nr; ++i )
@@ -179,12 +166,17 @@ var SQLExec = (function () {
     return res;
   };
 
-  SQLExec.prototype.runStatementFromPool = function(statement, testpool)
+  /**
+   *
+   * @param statement
+   * @param testpool
+   */
+  runStatementFromPool(statement : string , testpool : any) : Promise<any>
   {
     return new Promise(function(resolve, reject)
     {
       var connObj = undefined;
-      var callback = function(err, result) {
+      var callback = function(err, result?) {
         if(connObj) {
           testpool.release(connObj, function(err2) {
             if (err2) {
@@ -242,7 +234,6 @@ var SQLExec = (function () {
       });
     });
   };
-  return SQLExec;
-}());
 
-exports.SQLExec = SQLExec;
+}
+
