@@ -28,6 +28,7 @@ before_script:
   - npm install -g cross-env
   - cross-env NODE_ENV=test
   - gulp build
+  - cross-env DEBUG=*
 script:
   - npm test
 after_script:
