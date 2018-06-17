@@ -14,11 +14,12 @@
     "pretest": "bash bin/startdbs",
     "posttest": "bash bin/stopdbs",
     "setup": "gulp default",
-    "test": "gulp test",
+    "testG": "gulp test",
+    "test": "./node_modules/.bin/tap test\\ --cov",
     "startConsole": "node main.js",
     "run": "node main",
     "start": "node main",
-    "coverageTAP": "./node_modules/.bin/tap test\\ --cov"
+    "coverage": "./node_modules/.bin/tap test\\ --cov"
   },
   "keywords": [
     "jdbc",
