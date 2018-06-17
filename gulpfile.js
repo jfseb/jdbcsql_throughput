@@ -60,7 +60,7 @@ gulp.task('tsc', function () {
       },
       mapSources: function(src) {
         console.log('here we remap' + src);
-        return '/projects/nodejs/botbuilder/fdevstart/' + src;
+        return '/projects/nodejs/jdbcsql_throughput/' + src;
       }}
     )) // ,  { sourceRoot: './' } ))
   // Now the sourcemaps are added to the .js file
@@ -82,7 +82,7 @@ gulp.task('tscx', function () {
   return tsResult
     .pipe(babel({
       comments: true,
-      presets: ['es2015']
+      presets: ['env']
     }))
     // .pipe( ... ) // You can use other plugins that also support gulp-sourcemaps
     .pipe(sourcemaps.write()) // ,  { sourceRoot: './' } ))
@@ -132,11 +132,13 @@ var imgDest = 'gen';
 gulp.task('babel', ['tsc'], function () {
   // Add the newer pipe to pass through newer images only
   return gulp.src([imgSrc, 'gen_tsc/**/*.js'])
+    .pipe(sourcemaps.init())
     .pipe(newer(imgDest))
     .pipe(babel({
       comments: true,
       presets: ['env']
     }))
+    .pipe(sourcemaps.write('.'))
     .pipe(gulp.dest('gen'));
 });
 
