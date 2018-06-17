@@ -145,7 +145,7 @@ gulp.task('babel', ['tsc'], function () {
 var gulp_shell = require('gulp-shell');
 
 gulp.task('test', gulp_shell.task([
-  'tap test\\',
+  'tap test\\ --cov',
 ]));
 
 gulp.task('autotest', ['test'], function() {
