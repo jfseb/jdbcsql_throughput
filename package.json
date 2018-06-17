@@ -18,7 +18,7 @@
     "startConsole": "node main.js",
     "run": "node main",
     "start": "node main",
-    "coverageTAP": "./node_modules/.bin/tap test\\ --cov",
+    "coverageTAP": "./node_modules/.bin/tap test\\ --cov"
   },
   "keywords": [
     "jdbc",
@@ -33,11 +33,9 @@
     "lodash": "^4.17.10",
     "long": "^4.0.0",
     "node-java": "^1.0.1",
-    "node-uuid": "^1.4.7",
-    "nyc": "^11.0.2"
+    "node-uuid": "^1.4.7"
   },
-  "bin": {
-  },
+  "bin": {},
   "directories": {
     "lib": "./lib",
     "src": "./src",
@@ -56,7 +54,6 @@
     "awesome-typescript-loader": "^3.0.0-beta.18",
     "babel": "^6.5.2",
     "babel-preset-env": "^1.7.0",
-    "browserify-shim": "^3.8.13",
     "debug-levels": "^0.2.0",
     "del": "^2.2.2",
     "eslint": "^3.10.2",
