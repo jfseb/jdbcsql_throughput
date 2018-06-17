@@ -14,16 +14,11 @@
     "pretest": "bash bin/startdbs",
     "posttest": "bash bin/stopdbs",
     "setup": "gulp default",
-    "test" : "gulp exec-tests",
-    "testNodeunit": "gulp test",
-    "testOld": "./node_modules/.bin/nodeunit test/sqlexec test/utils && eslint",
+    "test": "gulp exec-tests",
     "startConsole": "node main.js",
-    "run": "nodeunit",
+    "run": "node main",
     "start": "node main",
-    "coverage" : "./node_modules/.bin/tap test\\ --cov",
-    "coverageX": "./node_modules/.bin/nyc --source-map false nodeunit test/sqlexec",
-    "coverreportplain": "./node_modules/.bin/nyc --source-map false report --reporter=text-lcov ",
-    "coveralls": "./node_modules/.bin/nyc --source-map false report --reporter=text-lcov | coveralls"
+    "coverageTAP": "./node_modules/.bin/tap test\\ --cov",
   },
   "keywords": [
     "jdbc",
@@ -33,18 +28,15 @@
   "license": "Apache",
   "dependencies": {
     "ascii-table": "^0.0.9",
-    "debug": "^2.3.2",
+    "debug": "^2.6.9",
     "jdbc": "^0.6.2",
     "lodash": "^4.17.10",
     "long": "^4.0.0",
     "node-java": "^1.0.1",
     "node-uuid": "^1.4.7",
-    "nyc": "^11.0.2",
-    "stream-to-array": "^2.3.0"
+    "nyc": "^11.0.2"
   },
   "bin": {
-    "nodeunit": ".nodeunit/bin/nodeunit",
-    "coverallst": ".coveralls/bin/coveralls"
   },
   "directories": {
     "lib": "./lib",
@@ -63,9 +55,8 @@
     "@types/node": "7.0.5",
     "awesome-typescript-loader": "^3.0.0-beta.18",
     "babel": "^6.5.2",
-    "babel-preset-es2015": "^6.18.0",
+    "babel-preset-env": "^1.7.0",
     "browserify-shim": "^3.8.13",
-    "coveralls": "^2.11.15",
     "debug-levels": "^0.2.0",
     "del": "^2.2.2",
     "eslint": "^3.10.2",
@@ -79,16 +70,13 @@
     "gulp-jsdoc3": "^2.0.0",
     "gulp-log-capture": "0.0.6",
     "gulp-newer": "^1.3.0",
-    "gulp-nodeunit": "0.0.5",
     "gulp-shell": "^0.5.2",
     "gulp-sourcemap": "^1.0.1",
     "gulp-typescript": "^3.1.3",
     "gulp-watch": "^4.3.11",
     "node-uuid": "^1.4.7",
-    "nodeunit": "^0.10.2",
     "request-defaults": "^1.2.0",
     "source-map-loader": "^0.1.6",
-    "stream-to-array": "^2.3.0",
     "tap": "^12.0.1",
     "ts-loader": "^4.3.1",
     "typescript": "^2.2.2"

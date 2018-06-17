@@ -68,35 +68,6 @@ gulp.task('tsc', function () {
 });
 
 
-gulp.task('clean', ['clean:models']);
-
-//console.log(' here config ' + JSON.stringify(webpackConfig)
-//);
-
-// Production build
-
-/*
-gulp.task('webpack', function(callback) {
-
-	// run webpack
-  webpack(webpackConfig, function(err, stats) {
-    if(err) throw new gutil.PluginError('webpack_build', err);
-    gutil.log('[webpack_build]', stats.toString({
-      colors: true
-    }));
-    callback();
-  });
-});
-*/
-
-
-
-
-
-
-
-
-
 /**
  * compile tsc (including srcmaps)
  * @input srcDir
@@ -118,7 +89,6 @@ gulp.task('tscx', function () {
       // Now the sourcemaps are added to the .js file
     .pipe(gulp.dest('gen2'));
 });
-
 
 /**
  * compile tsc (including srcmaps)
@@ -151,40 +121,6 @@ gulp.task('doc', function (cb) {
     .pipe(jsdoc(cb));
 });
 
-// gulp.task('copyInputFilterRules', ['tsc', 'babel'], function () {
-//  return gulp.src([
-//    genDir + '/match/inputFilterRules.js'
-//  ], { 'base': genDir })
-//    .pipe(gulp.dest('gen_cov'));
-// });
-
-/*
-var instrument = require('gulp-instrument')
-
-gulp.task('instrumentx', ['tsc', 'babel', 'copyInputFilterRules'], function () {
-  return gulp.src([
-    genDir + '/match/data.js',
-    genDir + '/match/dispatcher.js',
-    genDir + '/match/ifmatch.js',
-    genDir + '/match/inputFilter.js',
-    // genDir + '/match/inputFilterRules.js',
-    genDir + '/match/matchData.js',
-    //  genDir + '/match/inputFilterRules.js',
-    genDir + '/utils/*.js',
-    genDir + '/exec/*.js'],
-    { 'base': genDir
-    })
-    .pipe(instrument())
-    .pipe(gulp.dest('gen_cov'))
-})
-
-gulp.task('instrument', ['tsc', 'babel'], function () {
-  return gulp.src([genDir + '/**REMOVEME/*.js'])
-    .pipe(instrument())
-    .pipe(gulp.dest('gen_cov'))
-})
-*/
-
 var newer = require('gulp-newer');
 
 var imgSrc = 'src/**/*.js';
@@ -199,39 +135,14 @@ gulp.task('babel', ['tsc'], function () {
     .pipe(newer(imgDest))
     .pipe(babel({
       comments: true,
-      presets: ['es2015']
+      presets: ['env']
     }))
     .pipe(gulp.dest('gen'));
 });
 
+var gulp_shell = require('gulp-shell');
 
-var nodeunit = require('gulp-nodeunit');
-var env = require('gulp-env');
-
-/**
- * This does not work, as we are somehow unable to
- * redirect the lvoc reporter output to a file
- */
-gulp.task('nodeunit_testcov', [], function () {
-  const envs = env.set({
-    FSD_COVERAGE: '1',
-    FSDEVSTART_COVERAGE: '1'
-  });
-  // the file does not matter
-  gulp.src(['./**/match/dispatcher.nunit.js'])
-    .pipe(envs)
-    .pipe(nodeunit({
-      reporter: 'lcov',
-      reporterOptions: {
-        output: 'testcov'
-      }
-    })).pipe(gulp.dest('./cov/lcov.info'));
-});
-
-
-var shell = require('gulp-shell');
-
-gulp.task('test', shell.task([
+gulp.task('test', gulp_shell.task([
   'tap test\\',
 ]));
 
@@ -239,46 +150,6 @@ gulp.task('autotest', ['test'], function() {
   gulp.watch(['app/**/*.js', 'test/**/*.js'], ['test']);
 });
 
-gulp.task('nodeunit_test', ['tsc', 'babel'], function () {
-  gulp.src(['test/**/*.js'])
-    .pipe(nodeunit({
-      reporter: 'minimal'
-      // reporterOptions: {
-      //  output: 'testcov'
-      // }
-    })).on('error', function (err) { console.log('This is weird: ' + err.message); })
-    .pipe(gulp.dest('./out/lcov.info'));
-});
-
-gulp.task('testmin', ['tsc', 'babel'], function () {
-  gulp.src(['test/**/*.js'])
-    .pipe(nodeunit({
-      reporter: 'minimal'
-      // reporterOptions: {
-      //  output: 'testcov'
-      // }
-    })).on('error', function (err) { console.log('This is weird: ' + err.message); })
-    .pipe(gulp.dest('./out/lcov.info'));
-});
-
-//    .pipe(gulp.dest('./cov')) // default file name: src-cov.js
-// })
-
-// shoudl be replaced by ESLINT and a typescript output
-// compliant config
-
-/*
-var standard = require('gulp-standard');
-
-gulp.task('standard', ['babel'], function () {
-  return gulp.src(['src/*  * /*.js', 'test/* * / *.js', 'gulpfile.js'])
-  .pipe(standard())
-  .pipe(standard.reporter('default', {
-    breakOnError: true,
-    quiet: true
-  }));
-});
-*/
 
 const eslint = require('gulp-eslint');
 
@@ -299,8 +170,6 @@ gulp.task('eslint', () => {
     .pipe(eslint.failAfterError());
 });
 
-
-var gulp_shell = require('gulp-shell');
 
 gulp.task('graphviz', function () {
   gulp.src('model/*.gv')
