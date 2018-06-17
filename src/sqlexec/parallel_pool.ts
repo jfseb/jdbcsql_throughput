@@ -26,7 +26,7 @@ export class ParallelPool {
   constructor(nrexec : number, pool: any, config : any, configFileName : string) {
       var nrForks = Math.floor( (nrexec-1) / 4);
       this.pool = pool;
-      console.log('settign up forks' + nrForks);
+      console.log('settign up ' + nrForks + ' forks');
       this.forks = new Forks(nrForks , configFileName);
       ;
   };

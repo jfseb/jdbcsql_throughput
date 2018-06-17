@@ -9,7 +9,7 @@ class ParallelPool {
     constructor(nrexec, pool, config, configFileName) {
         var nrForks = Math.floor((nrexec - 1) / 4);
         this.pool = pool;
-        console.log('settign up forks' + nrForks);
+        console.log('settign up ' + nrForks + ' forks');
         this.forks = new sqlexec_remote_1.Forks(nrForks, configFileName);
         ;
     }

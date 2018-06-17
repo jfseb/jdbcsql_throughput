@@ -30,6 +30,9 @@ IParallelExecutor} from '../constants';
 var handles = new Map<string, IParallelOp>();
 
 
+
+var every_t_interval = undefined;
+var every_t_use_count  = 0;
 /*
  export const enum ResponseCode {
   NOMATCH = 0,
@@ -135,15 +138,12 @@ export function recordEnd(op : IParallelOp, slot: IRun, rc : boolean, res : any)
     }
   }
   op.allresults.push({ ts :  d.toUTCString(), t : d.getTime(), delta_t : d.getTime() - op.t_started, rc : rc, res : res});
-  if (rc && op.callbacks && op.callbacks.progress)
-  {
-    if (rc && op.callbacks && op.callbacks.progress) {
-      try {
-        op.callbacks.progress(op);
-      } catch( ex) {
-          console.log(ex.toString());
-          console.log(ex.stack);
-      }
+  if (op.callbacks && op.callbacks.progress) {
+    try {
+      op.callbacks.progress(op);
+    } catch( ex) {
+        console.log(ex.toString());
+        console.log(ex.stack);
     }
   }
 }
@@ -204,6 +204,7 @@ export class ParallelExec implements IParallelExecutor {
       parallel: parallel,
       options : {
         continuous : true,
+        every_t : options && options.every_t,
         terminate_nr : options && options.terminate_nr,
         terminate_delta_t : options && options.terminate_delta_t,
       },
@@ -217,6 +218,11 @@ export class ParallelExec implements IParallelExecutor {
     };
     // the jdbc driver is limiting to ~4 parallel requests
     var terminate_nr = options.terminate_nr;
+    var that = this;
+    if(op.options.every_t) {
+      every_t_interval = every_t_interval || setInterval( that.loopIt.bind(that), 20 );
+      every_t_use_count++;
+    }
     assert(handles.has(op.name) == false);
     handles.set(op.name, op);
     this.loopIt();
@@ -227,11 +233,11 @@ export class ParallelExec implements IParallelExecutor {
    * Run a stingle statement sequential
    * @param statement
    */
-  startOpSequential(statement: string, cb : ICallbacks): string
+  startOpSequential(tag : string, statement: string, cb : ICallbacks): string
   {
     var d = new Date();
     var op: IParallelOp = {
-      tag : 'sequential',
+      tag : tag,
       name: 'sequential',
       statement: statement,
       t_started : 0,
@@ -277,7 +283,7 @@ export class ParallelExec implements IParallelExecutor {
    */
   stopOp(handle: string) {
     if (handles.has(handle)) {
-      console.log('STOPPING NOW!!!!!!!!!!!!!!!!!!!!');
+      console.log('STOPPING ' + handle + ' NOW!!!');
       handles.get(handle).status = Status.STOPPED;
     }
   };
@@ -429,6 +435,13 @@ export class ParallelExec implements IParallelExecutor {
     removeKey.forEach( key =>
       { const op = handles.get(key);
         that.freeExecutorUsage(op.slots);
+        if(op.options.every_t) {
+          --every_t_use_count;
+          if(every_t_use_count == 0) {
+            assert(every_t_interval);
+            clearInterval(every_t_interval);
+          }
+        }
         handles.delete(key);
         console.log(' REMOVING ' + key);
         if (op.callbacks && op.callbacks.done)

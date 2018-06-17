@@ -70,9 +70,18 @@ export interface IResultRec {
   res : any
 };
 
+/**
+ * allows to
+ */
 export interface ICallbacks {
   done? : ( op : IParallelOp ) => void,
+  /**
+   * Always invoked on any response
+   */
   progress? : ( op : IParallelOp ) => void,
+  /**
+   * Only invoked on successful results
+   */
   result? : (err : object, result : any) => void
 }
 
