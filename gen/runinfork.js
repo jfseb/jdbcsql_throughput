@@ -1,4 +1,4 @@
-console.log('I AM RUNNING THE FORK!');
+console.log('I AM RUNNING THE FORK!' + process.argv[2]);
 var root = (process.env.FSD_COVERAGE) ? './gen_cov' : './gen';
 var debug = require('debug');
 const debuglog = debug('runinfork');

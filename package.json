@@ -27,7 +27,7 @@
     "sql client"
   ],
   "author": "jfsebpublic@gmail.com",
-  "license": "Apache",
+  "license": "Apache-2.0",
   "dependencies": {
     "ascii-table": "^0.0.9",
     "debug": "^3.1.0",
