@@ -2,6 +2,8 @@
     "compilerOptions": {
        // "target": "es6",
        "target": "es6",
+       //
+       "skipLibCheck" : true,
        // "module" : "es6", //'es2015
         "module": "commonjs",
         "moduleResolution": "node",
@@ -11,13 +13,13 @@
         // new ^^
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
-        "declaration": false,
+        "declaration": true,
         "noImplicitAny": false,
         "removeComments": false,
         "noLib": false,
         //"rootDir" : "src",
         "outDir" : "gen_tsc",
-        "skipLibCheck": true,
+        //
         "sourceMap" : true,
         //"inlineSourceMap": true,
         "preserveConstEnums": true,
@@ -30,6 +32,7 @@
         "!node_modules/**"
     ],
     "files": [
+        "src/index.ts",
         "src/interfaces.d.ts",
         "src/runinfork.ts",
         "src/parallel_exec.ts",

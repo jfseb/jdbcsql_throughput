@@ -73,10 +73,12 @@ gulp.task('tscO', function () {
  * @output genDir
  */
 gulp.task('tsc', function () {
-  var tsProject = ts.createProject('tsconfig.json', { inlineSourceMap: false });
+  var tsProject = ts.createProject('tsconfig.json', { inlineSourceMap: false, declaration: true });
   var tsResult = tsProject.src() // gulp.src('lib/*.ts')
     .pipe(sourcemaps.init()) // This means sourcemaps will be generated
     .pipe(tsProject());
+    // emit the typings (d.ts)
+  tsResult.dts.pipe(gulp.dest('gen'));
   return tsResult.js
   //    .pipe(babel({
   //      comments: true,
@@ -92,8 +94,6 @@ gulp.task('tsc', function () {
         return src;
         //return '/projects/nodejs/jdbcsql_throughput/' + src;
       }
-
-
     })) // ,  { sourceRoot: './' } ))
   // Now the sourcemaps are added to the .js file
     .pipe(gulp.dest('gen'));

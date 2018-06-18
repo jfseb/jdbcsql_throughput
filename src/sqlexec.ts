@@ -112,6 +112,7 @@ export class SQLExec {
   }
 
   makeAsciiTable(obj : any) {
+    /*
     const table1 = new AsciiTable();
     table1.setHeading('a','b','c')
       .addRow('a', 'apple', 'Some longer string');
@@ -119,10 +120,11 @@ export class SQLExec {
       .addRow('c', 'carrot', 'meow')
       .addRow('e', 'elephants');
     console.log(table1.toString());
+   */
     const table = new AsciiTable();
 
-    const table2 = new AsciiTable();
-    console.log(table2.toString());
+    //const table2 = new AsciiTable();
+    //console.log(table2.toString());
 
     if(obj.length  > 0 ) {
       var arr = Object.getOwnPropertyNames(obj[0]);

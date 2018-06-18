@@ -118,6 +118,8 @@ export function recordEnd(op : IParallelOp, slot: IRun, rc : boolean, res : any)
   op.metrics.count_total++;
   slot.duration = Date.now() - slot.duration;
   op.metrics.sum_duration_all += slot.duration;
+  op.lastResult = res;
+  op.lastRC = rc;
   console.log( 'E' + (Date.now()- t_total) + ' ' + (Date.now()- op.t_started) + "E:"  + op.parallel + " " + op.metrics.count_started + "/" + op.metrics.count_total + "/" + op.metrics.count_ok + "/" + op.metrics.count_bad + ' ' +  slot.duration + ' ' + slot.index + ' len=' + (_.isArray(res) ?  res.length : res)  + ' ' + op.name); //
   debuglog(JSON.stringify(res));
   if( rc )
@@ -140,7 +142,7 @@ export function recordEnd(op : IParallelOp, slot: IRun, rc : boolean, res : any)
   op.allresults.push({ ts :  d.toUTCString(), t : d.getTime(), delta_t : d.getTime() - op.t_started, rc : rc, res : res});
   if (op.callbacks && op.callbacks.progress) {
     try {
-      op.callbacks.progress(op);
+      op.callbacks.progress(op, rc);
     } catch( ex) {
         console.log(ex.toString());
         console.log(ex.stack);
@@ -194,6 +196,7 @@ export class ParallelExec implements IParallelExecutor {
     cb : ICallbacks = undefined) : string
   {
     var d = new Date();
+    options = options || {continuous : true};
     var op: IParallelOp = {
       tag : tag,
       name: (options && options.forcename) ? options.forcename : (tag + '_' + cnt++),
@@ -223,12 +226,43 @@ export class ParallelExec implements IParallelExecutor {
       every_t_interval = every_t_interval || setInterval( that.loopIt.bind(that), 20 );
       every_t_use_count++;
     }
-    assert(handles.has(op.name) == false);
+    //assert(handles.has(op.name) == false);
     handles.set(op.name, op);
     this.loopIt();
     return op.name;
   }
 
+  changeParallelOp(handle : string, parallel:number) {
+    // TODO
+    if(!handles.has(handle)) {
+      return;
+    }
+    var res = handles.get(handle);
+    res.parallel = parallel;
+  //
+    if(res.parallel > res.slots.length) {
+      res.slots = res.slots.slice(0, res.parallel );
+    }
+    //
+    if(!handle)
+    assert(false);
+  }
+
+  startSequentialSimple(statement: string) : Promise<any> {
+    var that = this;
+    return new Promise(function(resolve, reject) {
+
+      that.startOpSequential( "simplseg" + Date.now(), statement, {
+        progress: function(op: IParallelOp, rc) {
+          if(!rc) {
+            reject(op.lastResult);
+          } else {
+            resolve(op.lastResult);
+          }
+        }
+       });
+    });
+  }
   /**
    * Run a stingle statement sequential
    * @param statement
@@ -248,6 +282,7 @@ export class ParallelExec implements IParallelExecutor {
       options : {
         continuous : false,
       },
+      callbacks : cb, // todo associated only with this call!
       mode : Mode.SEQUENTIAL,
       slots: [],
       allresults : [],
@@ -345,6 +380,9 @@ export class ParallelExec implements IParallelExecutor {
         duration : 0, executor : this.assignMinUsedExecutor() };
       op.slots.push(slot);
     }
+    while((op.slots.length > op.parallel) && op.mode != Mode.SEQUENTIAL) {
+      op.slots = op.slots.slice(0,op.parallel);
+    }
     debuglog('augmenting parallel ' + op.slots.length);
     var terminate_nr = op.options && op.options.continuous && op.options.terminate_nr;
     if (terminate_nr && terminate_nr > 0 && op.metrics.count_total > terminate_nr )
@@ -392,7 +430,7 @@ export class ParallelExec implements IParallelExecutor {
     op.slots.every(entry => {
       if((op.options.continuous && entry.status != Status.RUNNING ) || entry.status == Status.INITIAL)
       {
-        debuglog(' t/s/f  ' + op.tag + ' ' + op.options.terminate_nr  + '/' + op.metrics.count_started + '/' + op.metrics.count_total);
+        console.log(' t/s/f  ' + op.tag + ' ' + op.options.terminate_nr  + '/' + op.metrics.count_started + '/' + op.metrics.count_total);
         if(op.options && (op.options.terminate_nr > 0) && op.metrics.count_started >= op.options.terminate_nr) {
           entry.status = Status.DONE;
           return;
@@ -411,6 +449,10 @@ export class ParallelExec implements IParallelExecutor {
           that.loopIt();
         });
         return (op.mode != Mode.SEQUENTIAL); // when sequential, stop after first scheduling
+      }
+      if(op.mode == Mode.SEQUENTIAL && entry.status == Status.RUNNING)
+      { // some sequential entry is still running!
+        return false;
       }
       return true;
     });

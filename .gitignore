@@ -5,12 +5,7 @@ info.lcov
 logs
 gen3
 gen2/**
-testmodel/*.bak
-testmodel/graph/*
-testmodel/*.gv
-testmodel2/graph/*
-testmodel2/*.gv
-testmodel2/*.bak
+.nyc_output/**
 gen_cov
 *.bak
 **/*.bak

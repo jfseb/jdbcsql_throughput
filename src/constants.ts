@@ -47,6 +47,8 @@ export class Metrics implements IMetrics {
 export interface IParallelExecutor {
   stopOp : (string) => void,
   triggerLoop : () => void,
+  startOpSequential: (tag : string, statement: string, cb : ICallbacks) => string,
+  changeParallelOp: (handle: string, parallel: number) => void,
   startOpRepeat: (
     tag: string,
     statement: string,
@@ -78,7 +80,7 @@ export interface ICallbacks {
   /**
    * Always invoked on any response
    */
-  progress? : ( op : IParallelOp ) => void,
+  progress? : ( op : IParallelOp, rc? : boolean ) => void,
   /**
    * Only invoked on successful results
    */
@@ -118,6 +120,8 @@ export interface IParallelOp {
   allresults : IResultRec[],
   timings : ITimingRec[],
   metrics : IMetrics,
-  callbacks? : ICallbacks
+  callbacks? : ICallbacks,
+  lastResult? : any,
+  lastRC? : boolean
 };
 

@@ -8,7 +8,6 @@ if (!jinst.isJvmCreated()) {
   jinst.setupClasspath([
     root + './drivers/hsqldb.jar',
     root + './drivers/derby.jar',
-    root + './drivers/hl-jdbc-2.3.90.jar',
     root + './drivers/derbyclient.jar',
     root + './drivers/derbytools.jar']);
 }
