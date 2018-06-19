@@ -47,7 +47,7 @@ function setUpForks(nrforks, configfile) {
                 op.reject(m.err);
             }
             else {
-                console.log('resolving with ' + JSON.stringify(m.result));
+                debuglog.enabled && debuglog('resolving with ' + JSON.stringify(m.result));
                 op.resolve({ result: m.result });
             }
             delete op[m.handle];
