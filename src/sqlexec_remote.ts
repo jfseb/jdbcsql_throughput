@@ -39,7 +39,7 @@ function setUpForks(nrforks : number, configfile : string)
     }
     forks.push( cp );
     cp.on('message', (m) => {
-      console.log('received message ' +  m.handle + ' ' + m.result + ' ' + JSON.stringify(m.err));
+      debuglog.enabled && debuglog('received message ' +  m.handle + ' ' + JSON.stringify(m.result) + ' ' + JSON.stringify(m.err));
       var op = openops[m.handle];
       if(!op) {
         console.log("unknown handle in message" + m.handle);

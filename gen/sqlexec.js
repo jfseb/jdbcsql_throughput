@@ -128,12 +128,34 @@ class SQLExec {
             console.log('here arr' + arr);
             table.setHeading.apply(table, arr);
         }
+        if (obj.length > 0) {
+            Object.getOwnPropertyNames(obj[0]).forEach((key, idx) => {
+                var val = obj[0][key];
+                if (typeof val == "number") {
+                    table.setAlign(idx, AsciiTable.RIGHT);
+                }
+                else {
+                    table.setAlign(idx, AsciiTable.LEFT);
+                }
+            });
+        }
         obj.forEach(function (entry) {
             console.log(JSON.stringify(entry));
             console.log(' here ' + JSON.stringify(obj[0]));
             var arr2 = Object.getOwnPropertyNames(obj[0]).map(function (key) { return entry[key]; });
             table.addRow.apply(table, arr2);
         });
+        if (obj.length > 0) {
+            Object.getOwnPropertyNames(obj[0]).forEach((key, idx) => {
+                var val = obj[0][key];
+                if (typeof val == "number") {
+                    table.setAlign(idx, AsciiTable.RIGHT);
+                }
+                else {
+                    table.setAlign(idx, AsciiTable.LEFT);
+                }
+            });
+        }
         return table.toString();
     }
     ;
