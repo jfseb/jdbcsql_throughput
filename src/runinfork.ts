@@ -33,7 +33,7 @@ if(cfgdata) {
   var Pool = require('jdbc');
 
   config = cfgdata.config;
-  var testpool = new Pool(config, function(err, ok) {
+  testpool = new Pool(config, function(err, ok) {
     debuglog('here we try pool' + err);
     debuglog('here we try pool' + ok);
   });
