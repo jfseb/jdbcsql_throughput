@@ -441,7 +441,9 @@ class ParallelExec {
         });
         if (handles.size > 0) {
             var that = this;
-            setTimeout(function () { that.loopIt(); }, 500);
+            setTimeout(function () {
+                that.loopIt();
+            }, 500);
         }
     }
 }

@@ -38,6 +38,7 @@ export interface IParallelExecutor {
     stopOp: (string) => void;
     triggerLoop: () => void;
     startOpSequential: (tag: string, statement: string, cb: ICallbacks) => string;
+    startSequentialSimple(statement: string): Promise<any>;
     changeParallelOp: (handle: string, parallel: number) => void;
     startOpRepeat: (tag: string, statement: string, parallel: number, options?: IOptions, cb?: ICallbacks) => string;
 }
