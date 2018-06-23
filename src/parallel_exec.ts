@@ -475,7 +475,8 @@ export class ParallelExec implements IParallelExecutor {
       that.scheduleOps(op);
     });
     removeKey.forEach( key =>
-      { const op = handles.get(key);
+    { 
+      const op = handles.get(key);
         that.freeExecutorUsage(op.slots);
         if(op.options.every_t) {
           --every_t_use_count;
@@ -495,7 +496,9 @@ export class ParallelExec implements IParallelExecutor {
     if (handles.size > 0)
     {
       var that = this;
-      setTimeout( function() { that.loopIt();}, 500);
+      setTimeout( function() { 
+        that.loopIt();
+      }, 500);
     }
   }
 
