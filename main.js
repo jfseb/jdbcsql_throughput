@@ -1,9 +1,7 @@
 
 
-var root = (process.env.FSD_COVERAGE) ? './gen_cov' : './gen';
-
-var debug = require('debug');
-//const debuglog = debug('main');
+var root = './gen';
+//var debug = require('debug');
 
 const SQLExec = require(root + '/sqlexec.js');
 

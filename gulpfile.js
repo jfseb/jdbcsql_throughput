@@ -77,25 +77,15 @@ gulp.task('tsc', function () {
   var tsResult = tsProject.src() // gulp.src('lib/*.ts')
     .pipe(sourcemaps.init()) // This means sourcemaps will be generated
     .pipe(tsProject());
-    // emit the typings (d.ts)
   tsResult.dts.pipe(gulp.dest('gen'));
   return tsResult.js
-  //    .pipe(babel({
-  //      comments: true,
-  //      presets: ['es2015']
-  //    }))
-    // .pipe( ... ) // You can use other plugins that also support gulp-sourcemaps
     .pipe(sourcemaps.write('.', {
       includeContent : true,
       sourceRoot: '.',
       mapSources: function(src, more) {
-        console.log('here we remap >>>' + src + ' '  +  JSON.stringify(more.sourceMap.file));
-        //
         return src;
-        //return '/projects/nodejs/jdbcsql_throughput/' + src;
       }
-    })) // ,  { sourceRoot: './' } ))
-  // Now the sourcemaps are added to the .js file
+    }))
     .pipe(gulp.dest('gen'));
 });
 

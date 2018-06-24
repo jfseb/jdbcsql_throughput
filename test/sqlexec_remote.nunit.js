@@ -21,20 +21,55 @@ console.log('config' + JSON.stringify(config));
 // var HTMLConnector = require(root + '/ui/htmlconnector.js')
 // const SmartDialog = require(root + '/bot/smartdialog.js')
 
+var root = `${__dirname}/../../`; // eslint-disable-line
+
+var exampleConfig = {
+  port : 3000,
+  classpath : [
+    root + './drivers/hsqldb.jar',
+    root + './drivers/derby.jar',
+    root + './drivers/derbyclient.jar',
+    root + './drivers/derbytools.jar'],
+  config : {
+    url: 'jdbc:hsqldb:hsql://localhost/xdb',
+    user: 'SA',
+    logging : 'info',
+    password: '',
+    minpoolsize: 2,
+    maxpoolsize: 50
+    //  properties : {user: '', password : ''}
+  }
+};
 
 t.test('testForkAndStop' , function(childTest) {
   // setup the forks
   // setup the forks
   childTest.plan(2);
   console.log('config' + JSON.stringify(config));
-  var forks = new SQLExec.Forks(3);
-  childTest.equal(forks.getForksCount(), 3);
+  var nrforks = 1;
+  var forks = new SQLExec.Forks(nrforks);
+  childTest.equal(forks.getForksCount(), nrforks);
   setTimeout( ()=> {
     forks.stop();
     childTest.equal(forks.getForksCount(), 0);
     childTest.end();
   }, 1000);
 });
+
+t.test('testForkAndStopWithConfig' , function(childTest) {
+  // setup the forks
+  // setup the forks
+  childTest.plan(2);
+  console.log('config' + JSON.stringify(config));
+  var forks = new SQLExec.Forks(1, exampleConfig);
+  childTest.equal(forks.getForksCount(), 1);
+  setTimeout( ()=> {
+    forks.stop();
+    childTest.equal(forks.getForksCount(), 0);
+    childTest.end();
+  }, 1000);
+});
+
 
 
 t.test('testNotExistTable' , function(childTest) {

@@ -13,7 +13,7 @@ export const enum Mode {
 }
 
 export interface ISQLExecutor {
-  execStatement : (statement: string) => Promise<Object>
+  execStatement : (statement: string) => Promise<any>
 }
 
 

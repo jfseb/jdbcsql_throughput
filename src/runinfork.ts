@@ -1,68 +1,81 @@
+import { SQLExec } from "./sqlexec";
+import { ISQLExecutor } from "./constants";
 
 console.log('I AM RUNNING THE FORK!' + process.argv[2]);
-var root = (process.env.FSD_COVERAGE) ? './gen_cov' : './gen';
+var root = './gen';
 
 var debug = require('debug');
 const debuglog = debug('runinfork');
 
-
 var fs = require('fs');
 var cfgdata = undefined;
-var SQLExec = undefined;
+var sqlexec = undefined;
 var testpool = undefined;
-
+/*
 try {
 var dataf = fs.readFileSync('jdbcsql_config.json');
     cfgdata = JSON.parse(dataf);
-} catch(e) 
+} catch(e)
 {
   console.log('could not read ./jdbcsql_config.json, falling back to default config' + e)
-}
-if(cfgdata) {
-  var path = require('path');
-  //var config_path = path.dirname(require.resolve('jdbcsql_throughput/package.json'));
-  console.log('using local config file ./jdbcsql_config.json ' + JSON.stringify(cfgdata));
-  var jinst = require('jdbc/lib/jinst');
+}*/
 
+var root = `${__dirname}/../`; // eslint-disable-line
+var defaultConfig = {
+  classpath : [
+  root + './drivers/hsqldb.jar',
+  root + './drivers/derby.jar',
+  root + './drivers/derbyclient.jar',
+  root + './drivers/derbytools.jar'],
+  config : {
+      url: 'jdbc:hsqldb:hsql://localhost/xdb',
+      user: 'SA',
+      logging : 'info',
+      password: '',
+      minpoolsize: 2,
+      maxpoolsize: 50
+      //  properties : {user: '', password : ''}
+    }
+  };
+
+var executor : ISQLExecutor = undefined;
+
+function SetupOnce(cfgdata) {
+  console.log('IN FORK Setup got config ' + JSON.stringify(cfgdata));
+  cfgdata = cfgdata || defaultConfig;
+  if(!cfgdata.config) {
+    cfgdata = defaultConfig;
+  }
+  console.log('IN FORK amended config ' + JSON.stringify(cfgdata));
+
+  var path = require('path');
+  var jinst = require('jdbc/lib/jinst');
   if (!jinst.isJvmCreated()) {
    console.log('adding drivers from ' + cfgdata.classpath);
-    jinst.addOption('-Xrs');     
+    jinst.addOption('-Xrs');
     jinst.setupClasspath(cfgdata.classpath);
   }
-
   var Pool = require('jdbc');
-
-  config = cfgdata.config;
-  testpool = new Pool(config, function(err, ok) {
-    debuglog('here we try pool' + err);
-    debuglog('here we try pool' + ok);
-  });
-  testpool.initialize(function() {});
-  SQLExec = require('./sqlexec.js')
-} else {
-
-  var configFileName = process.argv[2] || `${__dirname}/configs/config_derby.js`;
-
-  console.log('configfilename ' + configFileName);
-  var config = require(configFileName).config
-  var Pool = require('jdbc');
-  console.log('config' + JSON.stringify(config));
-
-  SQLExec = require('./sqlexec.js');
-
+  var config = cfgdata.config;
   testpool = new Pool(config);
+  testpool.initialize(function() {});
+  sqlexec = require('./sqlexec.js');
+  console.log('FORK configured!');
+  executor = new sqlexec.SQLExec().makeRunner(testpool);
 
-  testpool.initialize( function () {} );
 }
-
 // /scripts/start_cluster.py --num-relational 1 --num-series 0 --num-docstore 0 --num-disk 0 --num-graph 0  --tc-port=2202  --set-config relational.max_memory=250000000 --reconfigure-interval 3
 // /SAPDevelop/hanalite/build/Release/v2client  -clocalhost:2202 -s /SAPDevelop/hanalite_rel_bench/sample_data/gen.viewdef.sql
 // v2client -c127.0.0.1 -s sample_data/tcp_viewdef.sql
 
-var executor = new SQLExec.SQLExec().makeRunner(testpool);
+
 // this executable listens to single query requests (without any synchronization etc)
 // and runs them
 process.on('message', (m) => {
+  if(m && m.cfgdata) {
+    SetupOnce(m.cfgdata);
+    return;
+  }
   debuglog('IN FORK got ' + JSON.stringify(m));
   if(!m.statement) {
     return;

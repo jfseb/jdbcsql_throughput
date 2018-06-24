@@ -34,6 +34,7 @@
         "src/interfaces.d.ts",
         "src/runinfork.ts",
         "src/parallel_exec.ts",
+        "src/parseinput.ts",
         "src/parallel_pool.ts",
         "src/sqlexec.ts",
         "src/sqlexec_remote.ts",

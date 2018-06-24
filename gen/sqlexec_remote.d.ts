@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import * as child_process from 'child_process';
 export declare class Forks {
-    constructor(nr: number, configFileName: string);
+    constructor(nr: number, config: any);
     getFork(index: number): child_process.ChildProcess;
     stop(): void;
     getForksCount(): number;

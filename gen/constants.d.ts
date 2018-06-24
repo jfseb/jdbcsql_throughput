@@ -9,7 +9,7 @@ export declare const enum Mode {
     PARALLEL = 1,
 }
 export interface ISQLExecutor {
-    execStatement: (statement: string) => Promise<Object>;
+    execStatement: (statement: string) => Promise<any>;
 }
 export interface IRun {
     index: number;

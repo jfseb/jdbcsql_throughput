@@ -2,6 +2,7 @@
 
 import {Pool} from 'jdbc';
 import {ParallelExec} from './parallel_exec';
+import * as csv_stringify from 'csv-stringify/lib/sync';
 import * as debug from 'debug';
 import { INSPECT_MAX_BYTES } from 'buffer';
 const debuglog = debug('average');
@@ -445,6 +446,37 @@ export function dumpAllResults(allresult : IResult[]) {
   });
 }
 
+export function dumpAllResultsToCSV(allresult : IResult[]) {
+  if(allresult.length == 0) {
+    return "";
+  }
+  var headers = {};
+  var s1 = Object.keys(allresult[0]).map( key =>{ headers[key] = key});
+
+  var headersarr = Array.from(Object.keys(allresult[0]));
+  console.log(csv_stringify([[1,2],[3,4]]));
+
+  console.log(csv_stringify([{a : 1, b: 2}], {
+     header: true, columns : ['a','b']
+    }
+  ));
+
+  return csv_stringify(allresult, { header : true, columns: headersarr} )
+ /* var columns = {
+    year: 'birthYear',
+    phone: 'phone'
+   };
+   var stringifier = stringify({ header: true, columns: columns });
+
+
+  console.log(s1);
+  allresult.forEach(entry =>
+  {
+    var sn =  Object.keys(entry).map( key => dumpNice(entry[key],10)).join(',');
+    console.log(sn);
+  });
+  */
+}
 
 
 export function startSequence(configFileName : string, testpool: Pool, current_index = 0) {

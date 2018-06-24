@@ -27,17 +27,14 @@ var openops = {};
  *
  *
  */
-function setUpForks(nrforks : number, configfile : string)
+function setUpForks(nrforks : number, absoluteConfig: any)
 {
+  absoluteConfig = absoluteConfig || {};
   for(var i = 0; i < nrforks; ++i) {
-    console.log('starting fork' + i);
-    var cp = undefined;
-    if(configfile) {
-      cp = child_process.fork(`${__dirname}/runinfork.js`, [configfile], { silent: true });
-    } else {
-      cp = child_process.fork(`${__dirname}/runinfork.js`, undefined, { silent: true });
-    }
+    console.log('setting up fork ' + i + ' with config ' + JSON.stringify(absoluteConfig));
+    var cp = child_process.fork(`${__dirname}/runinfork.js`, undefined, { silent: true });
     forks.push( cp );
+    cp.send( { cfgdata :  absoluteConfig } );
     cp.on('message', (m) => {
       debuglog.enabled && debuglog('received message ' +  m.handle + ' ' + JSON.stringify(m.result) + ' ' + JSON.stringify(m.err));
       var op = openops[m.handle];
@@ -65,8 +62,8 @@ function stopForks() {
 
 
 export class Forks {
-  constructor(nr : number, configFileName : string) {
-    setUpForks(nr, configFileName);
+  constructor(nr : number, config : any) {
+    setUpForks(nr, config);
   }
   getFork(index : number) {
     return forks[index];
