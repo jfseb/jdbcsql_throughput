@@ -1,9 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const parallel_exec_1 = require("./parallel_exec");
+const parallel_pool_1 = require("./parallel_pool");
 const csv_stringify = require("csv-stringify/lib/sync");
 const debug = require("debug");
-const debuglog = debug('average');
+const debuglog = debug('averages');
 'use strict';
 /**
  * Responses of a dispatcher
@@ -14,15 +15,13 @@ var ResponseCode;
     ResponseCode[ResponseCode["EXEC"] = 1] = "EXEC";
     ResponseCode[ResponseCode["QUERY"] = 2] = "QUERY";
 })(ResponseCode = exports.ResponseCode || (exports.ResponseCode = {}));
-const constants_1 = require("./constants");
-var handles = new Map();
+//import { ParallelPool, SQLExec, ParallelExecutor, Constants } from './parallel_exec';
+//import { IResultRec } from './constants';
 var index = 0;
 var allresults = [];
-var forks = undefined;
 var SQLExec2 = require('./sqlexec.js');
 var SQLExec = SQLExec2.SQLExec;
-//import {SQLExec} from './sqlexec.js';
-const sqlexec_remote_1 = require("./sqlexec_remote");
+var parpool = undefined;
 var parexec = undefined;
 /*
 export function isTerminated(op : IParallelOp) : boolean
@@ -164,43 +163,45 @@ function startOpMonitor(parexec) {
 }
 exports.startOpMonitor = startOpMonitor;
 var cnt = 0;
+const fs = require("fs");
 /**
  *  execute a statement repeatedly until one calls close on the handle.
  *
  *
  */
-function startOpRepeat(tag, statement, parallel, options = undefined, cb = undefined) {
-    var d = new Date();
-    var op = {
-        tag: tag,
-        name: tag + '_' + cnt++,
-        statement: statement,
-        t_started: 0,
-        mode: 1 /* PARALLEL */,
-        status: 0 /* RUNNING */,
-        parallel: parallel,
-        options: {
-            continuous: true,
-            terminate_nr: options && options.terminate_nr,
-            terminate_delta_t: options && options.terminate_delta_t,
-        },
-        cps: [],
-        cp_running: 0,
-        slots: [],
-        timings: [],
-        allresults: [],
-        callbacks: cb,
-        metrics: new constants_1.Metrics()
-    };
-    // the jdbc driver is limiting to ~4 parallel requests
-    var terminate_nr = options.terminate_nr;
-    handles.set(op.name, op);
-    return op.name;
-}
-exports.startOpRepeat = startOpRepeat;
+/*
+export function XstartOpRepeat(tag: string, statement: string, parallel: number, options: IOptions = undefined, cb : ICallbacks = undefined): string {
+  var d = new Date();
+  var op: IParallelOp = {
+    tag : tag,
+    name: tag + '_' + cnt++,
+    statement: statement,
+    t_started : 0,
+    mode : Mode.PARALLEL,
+    status: Status.RUNNING,
+    parallel: parallel,
+    options : {
+      continuous : true,
+      terminate_nr : options && options.terminate_nr,
+      terminate_delta_t : options && options.terminate_delta_t,
+    },
+    cps :[],
+    cp_running: 0,
+    slots: [],
+    timings: [],
+    allresults : [],
+    callbacks : cb,
+    metrics : new Metrics()
+  };
+
+  // the jdbc driver is limiting to ~4 parallel requests
+  var terminate_nr = options.terminate_nr;
+  xhandles.set(op.name, op);
+  return op.name;
+}*/
 function dumpProgress(op) {
     var avg = getBestAvg(op.t_started, op.timings);
-    console.log(' dump progress ' + op.metrics.count_total);
+    console.log(' dump progress ' + op.metrics.count_total + ' timings: ' + (op.timings && op.timings.length));
     if (op.metrics.count_total > 1) {
         console.log(op.metrics.count_total * 1000 * 60 / (Date.now() - op.t_started) + ' qps; ' + (op.metrics.count_bad * 100 / op.metrics.count_total) + ' BEST_AVG:' + JSON.stringify(avg));
     }
@@ -268,10 +269,12 @@ function makeTimingRecord(res) {
 }
 exports.makeTimingRecord = makeTimingRecord;
 function registerTiming(time, rec) {
-    handles.forEach(function (op) {
+    var handles = parexec.getHandles();
+    handles.forEach(function (hndl) {
+        var op = parexec.getOp(hndl);
         if (op.status != 1 /* STOPPED */) {
             op.timings.push({ time: time, rec: rec });
-            //console.log( 'timing length now' + op.timings.length);
+            debuglog('adding timing length now' + op.timings.length);
         }
     });
 }
@@ -332,7 +335,7 @@ function getBestAvg(start, recs) {
         debuglog('got a best record!!');
         exports.Keys.forEach(key => {
             var rec = bestTimingRec.rec.get(key);
-            var sortedIntArr = Array.from(rec.keys()).map(k => parseInt(' ' + k)).sort();
+            var sortedIntArr = Array.from(rec.keys()).map(k => parseInt(' ' + k)).sort((a, b) => a - b);
             debuglog('sortedIntArr' + sortedIntArr);
             result.values[key] = sortedIntArr.reduce((prev, time) => {
                 if ((time < best_avg)) {
@@ -380,31 +383,20 @@ function dumpAllResultsToCSV(allresult) {
     if (allresult.length == 0) {
         return "";
     }
-    var headers = {};
-    var s1 = Object.keys(allresult[0]).map(key => { headers[key] = key; });
     var headersarr = Array.from(Object.keys(allresult[0]));
-    console.log(csv_stringify([[1, 2], [3, 4]]));
-    console.log(csv_stringify([{ a: 1, b: 2 }], {
-        header: true, columns: ['a', 'b']
-    }));
     return csv_stringify(allresult, { header: true, columns: headersarr });
-    /* var columns = {
-       year: 'birthYear',
-       phone: 'phone'
-      };
-      var stringifier = stringify({ header: true, columns: columns });
-   
-   
-     console.log(s1);
-     allresult.forEach(entry =>
-     {
-       var sn =  Object.keys(entry).map( key => dumpNice(entry[key],10)).join(',');
-       console.log(sn);
-     });
-     */
 }
 exports.dumpAllResultsToCSV = dumpAllResultsToCSV;
-function startSequence(configFileName, testpool, current_index = 0) {
+function startRun(fullconfig, input, testpool, options) {
+    options.fnout = options.fnout || 'out.csv';
+    var max_parallel = input.reduce((prev, entry) => Math.max(prev, entry.parallel), 0);
+    parpool = new parallel_pool_1.ParallelPool(max_parallel, testpool, fullconfig);
+    parexec = new parallel_exec_1.ParallelExec(parpool.getExecutors());
+    var hndl = startOpMonitor(parexec);
+    startSequence(fullconfig, input, testpool, options, 0);
+}
+exports.startRun = startRun;
+function startSequence(fullconfig, input, testpool, options, current_index = 0) {
     //var tcp001 = 'select count(*), AVG(T1.L_QUANTITY), AVG(T1.L_DISCOUNT + T2.L_DISCOUNT), AVG(T2.L_EXTENDEDPRICE), T2.L_SHIPMODE FROM LINEITEM1 AS T1 JOIN LINEITEM1 AS T2 ON T1.L_SHIPMODE = T2.L_SHIPMODE WHERE T1.L_SHIPMODE <= \'FOB\' AND T1.L_QUANTITY > 2 AND T2.L_QUANTITY > 10 GROUP BY T2.L_SHIPMODE ORDER BY T2.L_SHIPMODE;';
     //var tcp001 = 'select count(*), AVG(T1.L_QUANTITY), AVG(T1.L_DISCOUNT + T2.L_DISCOUNT), AVG(T2.L_EXTENDEDPRICE), T2.L_SHIPMODE FROM LINEITEM1 AS T1 JOIN LINEITEM1 AS T2 ON T1.L_SHIPMODE = T2.L_SHIPMODE WHERE T1.L_SHIPMODE <= \'B\' AND T1.L_QUANTITY > 10 AND T2.L_QUANTITY > 10 GROUP BY T2.L_SHIPMODE ORDER BY T2.L_SHIPMODE;';
     //var tcp001 = 'select count(*), AVG(T1.L_QUANTITY), AVG(T1.L_DISCOUNT + T2.L_DISCOUNT), AVG(T2.L_EXTENDEDPRICE), T2.L_SHIPMODE FROM LINEITEM1 AS T1 JOIN LINEITEM1 AS T2 ON T1.L_SHIPMODE = T2.L_SHIPMODE WHERE T1.L_SHIPMODE <= \'B\' AND T1.L_QUANTITY > 10 AND T2.L_QUANTITY > 100 GROUP BY T2.L_SHIPMODE ORDER BY T2.L_SHIPMODE;';
@@ -412,7 +404,17 @@ function startSequence(configFileName, testpool, current_index = 0) {
     var parq_1m_zip = 'select max(VCHAR50RNDVL), vchar4dic6, avg(UINT64_RND) from GEN_1M_PAR_ZIP group by VCHAR4DIC6;';
     //ALTERD
     //tcp_001_4 = 'select count(*), AVG(T1.L_QUANTITY), AVG(T1.L_DISCOUNT + T2.L_DISCOUNT), AVG(T2.L_EXTENDEDPRICE), T2.L_SHIPMODE FROM LINEITEM1 AS T1 JOIN LINEITEM1 AS T2 ON T1.L_SHIPMODE = T2.L_SHIPMODE WHERE T1.L_SHIPMODE <= \'FOB\' AND T1.L_PARTKEY > 1000 AND T2.L_PARTKEY > 1000 AND T1.L_QUANTITY > 2 AND T2.L_QUANTITY > 1000 GROUP BY T2.L_SHIPMODE ORDER BY T2.L_SHIPMODE;';
-    var arr = [
+    var interim = [
+        `ALTER SYSTEM ALTER CONFIGURATION ('VORA', 'SYSTEM') SET ('RELATIONAL', 'QUOTA_OPEN_TXN_SIZE') = 18 WITH RECONFIGURE;`,
+        `ALTER SYSTEM ALTER CONFIGURATION ('VORA', 'SYSTEM') SET ('RELATIONAL', 'QUOTA_WAITING_TXN_SIZE') = 10  WITH RECONFIGURE;`,
+        `ALTER SYSTEM ALTER CONFIGURATION ('VORA', 'SYSTEM') SET ('RELATIONAL', 'QUOTA_OPEN_TXN_SIZE') = 19 WITH RECONFIGURE;`,
+        `ALTER SYSTEM ALTER CONFIGURATION ('VORA', 'SYSTEM') SET ('RELATIONAL', 'QUOTA_WAITING_TXN_SIZE') = 9  WITH RECONFIGURE;`,
+        `ALTER SYSTEM ALTER CONFIGURATION ('VORA', 'SYSTEM') SET ('RELATIONAL', 'QUOTA_OPEN_TXN_SIZE') = 18 WITH RECONFIGURE;`,
+        `ALTER SYSTEM ALTER CONFIGURATION ('VORA', 'SYSTEM') SET ('RELATIONAL', 'QUOTA_WAITING_TXN_SIZE') = 10  WITH RECONFIGURE;`,
+        `ALTER SYSTEM ALTER CONFIGURATION ('VORA', 'SYSTEM') SET ('RELATIONAL', 'QUOTA_OPEN_TXN_SIZE') = -1 WITH RECONFIGURE;`,
+        `ALTER SYSTEM ALTER CONFIGURATION ('VORA', 'SYSTEM') SET ('RELATIONAL', 'QUOTA_WAITING_TXN_SIZE') = -1  WITH RECONFIGURE;`,
+    ];
+    var arrx = [
         { PAR: 1, MAX_NR: 40, statement: '', TAG: 'TCP_P1' },
         { PAR: 2, MAX_NR: 40, statement: '', TAG: 'TCP_P1' },
         // { PAR : 3,  MAX_NR : 40, statement : '', TAG : 'TCP_P1'},
@@ -425,48 +427,63 @@ function startSequence(configFileName, testpool, current_index = 0) {
         { PAR: 20, MAX_NR: 40, statement: '', TAG: 'TCP_P1' },
         { PAR: 32, MAX_NR: 40, statement: '', TAG: 'TCP_P1' }
     ];
-    arr.forEach(entry => entry['TAG'] = 'TCP_P_' + entry.PAR);
-    arr.forEach(entry => entry['TAG'] = 'P1Z_P_' + entry.PAR);
-    arr.forEach(entry => entry['statement'] = tcp_001_4);
-    arr.forEach(entry => entry['statement'] = parq_1m_zip);
-    arr.forEach(entry => entry['MAX_NR'] = 40);
-    if (current_index == 0) {
-        // create the forks!
-        var max_parallel = arr.reduce((prev, entry) => Math.max(prev, entry.PAR), 0);
-        var nrForks = Math.ceil(max_parallel / 4);
-        forks = new sqlexec_remote_1.Forks(nrForks, configFileName);
-        ;
-    }
+    arrx.forEach(entry => entry['TAG'] = 'TCP_P_' + entry.PAR);
+    arrx.forEach(entry => entry['TAG'] = 'P1Z_P_' + entry.PAR);
+    arrx.forEach(entry => entry['statement'] = tcp_001_4);
+    arrx.forEach(entry => entry['statement'] = parq_1m_zip);
+    arrx.forEach(entry => entry['MAX_NR'] = 40);
     var hndl = startOpMonitor(parexec);
-    var executors;
-    executors = SQLExec.getExecutors(testpool, 4);
-    executors = executors.concat(forks.getExecutors(4));
-    parexec = new parallel_exec_1.ParallelExec(executors);
     //var handle = runner.startOpRepeat('SELECT COUNT(*) FROM T1;', 20);
     //QPM     |BAD%   |PAR    |NR_PARALLEL_PLAN       |MAX_MEM        |CPU%   |MEM%   |QUERY_PER_MIN  |AGGR_PLAN_EXEC_DURATION
     //10      |0      |4      |4      |165    |94     |173    |169    |2624
     //QPM     |BAD%   |PAR    |PAR_P  |MAX_MEM        |CPU%   |MEM%   |QUERY_PER_MIN  |AGGR_PLAN_EXEC_DURATION
     //10      |0      |8      |4      |174    |98     |171    |1      |2761
-    var showOp = dumpProgress;
+    var runOneInterim = function (index, done, reject) {
+        var r = parexec.startSequentialSimple(interim[index + 0]).then(() => parexec.startSequentialSimple(interim[index + 1])).then(() => {
+            if (index + 2 == interim.length) {
+                done();
+            }
+            else {
+                setTimeout(function () {
+                    runOneInterim(index + 2, done, reject);
+                }, 2000);
+            }
+        }).catch(reject);
+    };
+    function runInterims(parexec) {
+        return new Promise(function (resolve, reject) {
+            runOneInterim(0, resolve, reject);
+        });
+    }
     var makeNext = function (op) {
         var res = dumpDone(op);
         allresults.push(res);
         dumpAllResults(allresults);
+        var csvcontent = dumpAllResultsToCSV(allresults);
+        fs.writeFileSync(options.fnout, csvcontent);
+        console.log('>>csv\n' + csvcontent + '\n');
         parexec.stopOp('monitor');
         parexec.stopOp(handle);
         parexec.triggerLoop();
+        // run the cleanup scripts 
+        // we want to temper with the config to clear maxmem 
+        // but due to the synchronization delay, we wait 3 seconds. 
         //loopIt(executor);
         ++index;
-        if (index < arr.length) {
-            console.log("*** INDEX");
-            startSequence(configFileName, testpool, index);
+        if (index < input.length) {
+            runInterims(parexec).then(() => {
+                console.log("*** INDEX");
+                startSequence(fullconfig, input, testpool, options, index);
+            });
         }
         else {
-            forks.stop();
+            console.log('stop forks ');
+            parpool.stop();
+            process.exit(0);
         }
     };
-    handle = parexec.startOpRepeat(arr[current_index].TAG, arr[current_index].statement, arr[current_index].PAR, { continuous: true, terminate_nr: arr[current_index].MAX_NR }, {
-        progress: showOp,
+    handle = parexec.startOpRepeat(input[current_index].tag, input[current_index].statement, input[current_index].parallel, { continuous: true, terminate_nr: input[current_index].terminate_nr }, {
+        progress: dumpProgress,
         done: makeNext
     });
     parexec.triggerLoop();

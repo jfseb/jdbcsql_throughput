@@ -12,6 +12,19 @@ var Mode;
     Mode[Mode["SEQUENTIAL"] = 0] = "SEQUENTIAL";
     Mode[Mode["PARALLEL"] = 1] = "PARALLEL";
 })(Mode = exports.Mode || (exports.Mode = {}));
+/** Struture read from file
+*/
+class IStatementRun {
+    constructor() {
+        this.tag = undefined;
+        this.parallel = 0;
+        this.statement = undefined;
+        this.terminate_nr = 0;
+        this.terminate_delta_t = 0;
+    }
+}
+exports.IStatementRun = IStatementRun;
+;
 ;
 class Metrics {
     constructor() {

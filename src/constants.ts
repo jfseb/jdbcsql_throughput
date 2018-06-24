@@ -16,6 +16,16 @@ export interface ISQLExecutor {
   execStatement : (statement: string) => Promise<any>
 }
 
+/** Struture read from file
+*/
+export class IStatementRun
+{
+  tag : string = undefined;
+  parallel: number = 0;
+  statement : string = undefined;
+  terminate_nr? : number = 0;
+  terminate_delta_t? : number = 0;
+};
 
 
 export interface IRun {
@@ -47,6 +57,8 @@ export class Metrics implements IMetrics {
 export interface IParallelExecutor {
   stopOp : (string) => void,
   triggerLoop : () => void,
+  getHandles: () => string[],
+  getOp : (hndl : string) => IParallelOp,
   startOpSequential: (tag : string, statement: string, cb : ICallbacks) => string,
   startSequentialSimple(statement : string) : Promise<any>,
   changeParallelOp: (handle: string, parallel: number) => void,

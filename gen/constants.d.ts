@@ -11,6 +11,15 @@ export declare const enum Mode {
 export interface ISQLExecutor {
     execStatement: (statement: string) => Promise<any>;
 }
+/** Struture read from file
+*/
+export declare class IStatementRun {
+    tag: string;
+    parallel: number;
+    statement: string;
+    terminate_nr?: number;
+    terminate_delta_t?: number;
+}
 export interface IRun {
     index: number;
     statement: string;
@@ -37,6 +46,8 @@ export declare class Metrics implements IMetrics {
 export interface IParallelExecutor {
     stopOp: (string) => void;
     triggerLoop: () => void;
+    getHandles: () => string[];
+    getOp: (hndl: string) => IParallelOp;
     startOpSequential: (tag: string, statement: string, cb: ICallbacks) => string;
     startSequentialSimple(statement: string): Promise<any>;
     changeParallelOp: (handle: string, parallel: number) => void;

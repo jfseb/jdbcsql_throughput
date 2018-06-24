@@ -10,6 +10,7 @@ var TPool = require('jdbc').Pool;
 */
 var ResultSet_toObjectIter = function (callback) {
     var self = this;
+    // some sql responses do not provide a resultset ( at least from some drivers )
     self.getMetaData(function (err, rsmd) {
         if (err) {
             return callback(err);
@@ -213,6 +214,10 @@ class SQLExec {
                     sqlstatement.executeQuery(statement, function (err, resultSet) {
                         if (err) {
                             callback(err);
+                            return;
+                        }
+                        if (!resultSet._rs) {
+                            callback(null, { conn: conn, result: [] });
                             return;
                         }
                         resultSet.toObjectIter = ResultSet_toObjectIter;

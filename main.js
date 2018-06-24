@@ -1,25 +1,83 @@
 
 
-var root = './gen';
-//var debug = require('debug');
+const root = './gen';
+const debuglog = require('debug')('main');
+const fs = require('fs');
+
+var argsparse = require('argparse');
+var ArgumentParser = require('argparse').ArgumentParser;
+var parser = new ArgumentParser({
+  version: '0.0.1',
+  addHelp:true,
+  description: 'jdbc_sql_client \n node server '
+});
+parser.addArgument(
+  [ '-i', '--input' ],
+  {
+    help: 'Input file',
+    type : 'string',
+    nargs : argsparse.Const.OPTIONAL,
+    defaultValue : 'queries.txt',
+    metavar : 'INPUT_FILENAME'
+  }
+);
+parser.addArgument(
+  [ '-o', '--output' ],
+  {
+    help: 'output file, overwritten!',
+    type : 'string',
+    nargs : argsparse.Const.OPTIONAL,
+    defaultValue : 'out.txt',
+    metavar : 'OUTPUT_FILENAME'
+  }
+);
+parser.addArgument(
+  [ '--simul' ],
+  {
+    help: 'bar foo',
+    nargs: 0
+  }
+);
+
+var args = parser.parseArgs();
+
+
+
+var fnout = args.output || 'out.txt';
+console.log('output file : ' + fnout);
+
+const cfgdata = JSON.parse(fs.readFileSync('jdbcsql_config.json'));
+//export function StartRun(fullconfig : any, input : IStatementRun[], testpool : Pool, options : any)
+
+debuglog(' config used ' + JSON.stringify(cfgdata));
 
 const SQLExec = require(root + '/sqlexec.js');
 
-var config = new SQLExec.SQLExec().config;
 var Pool = require('jdbc');
-config = new SQLExec.SQLExec().config;
-console.log('config' + JSON.stringify(config));
+console.log('config' + JSON.stringify(cfgdata));
 
+
+var path = require('path');
+var jinst = require('jdbc/lib/jinst');
+
+if (!jinst.isJvmCreated()) {
+ console.log('adding drivers from ' + cfgdata.classpath);
+ jinst.addOption('-Xrs');     
+ jinst.setupClasspath(cfgdata.classpath);
+}
+
+var Pool = require('jdbc');
+
+config = cfgdata.config;
 var testpool = new Pool(config);
 testpool.initialize( function () {} );
-
 
 // /scripts/start_cluster.py --num-relational 1 --num-series 0 --num-docstore 0 --num-disk 0 --num-graph 0  --tc-port=2202  --set-config relational.max_memory=250000000 --reconfigure-interval 3
 // /SAPDevelop/hanalite/build/Release/v2client  -clocalhost:2202 -s /SAPDevelop/hanalite_rel_bench/sample_data/gen.viewdef.sql
 
 // v2client -c127.0.0.1 -s sample_data/tcp_viewdef.sql
 
-var executor = new SQLExec.SQLExec().makeRunner(testpool);
+//var executor = new SQLExec.SQLExec().makeRunner(testpool);
 const runner = require(root + '/averages.js');
 
 //var hndl = runner.startOpSequential('CREATE TABLE IF NOT EXISTS T11 ( id int , abc varchar(10));');
@@ -28,7 +86,17 @@ const runner = require(root + '/averages.js');
 // hndl = runner.startOpSequential('INSERT INTO T11 (id, abc) values (' + ( i + 900 + Date.now() % 10000000)  + ', \'zy' + i +' sf\');');
 //}
 
-runner.startSequence(executor);
+
+const ParseInput = require('./gen/parseinput.js');
+
+var Pi = new ParseInput.ParseInput(args.input);
+
+var input = Pi.parseString();
+
+console.log('here input  ' + JSON.stringify(input,undefined,2));
+
+runner.startRun(cfgdata, input, testpool, { fnout : fnout }  ); 
+//runner.startSequence(executor);
 
 
 // we sample every T / 20 and N / 20  (if specified)

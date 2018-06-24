@@ -16,7 +16,7 @@ import { ISQLExecutor} from './constants';
  */
 var ResultSet_toObjectIter = function (callback) {
   var self = this;
-
+  // some sql responses do not provide a resultset ( at least from some drivers )
   self.getMetaData(function (err, rsmd) {
     if (err) {
       return callback(err);
@@ -240,6 +240,10 @@ export class SQLExec {
           {
             if(err) {
               callback(err);
+              return;
+            }
+            if(!resultSet._rs) {
+              callback(null, {conn:conn, result:[]});
               return;
             }
             resultSet.toObjectIter = ResultSet_toObjectIter;

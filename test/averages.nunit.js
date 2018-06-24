@@ -1,15 +1,15 @@
 
-var root = '../gen';
 var t = require('tap');
 
-const config = require(root + '/configs/config_derby.js');
-const SQLExec = require(root + '/sqlexec_remote.js');
+//const config = require(root + '/configs/config_derby.js');
+//const SQLExec = require(root + '/sqlexec_remote.js');
 
 const Averages = require('../gen/averages.js');
 
 
-var root = `${__dirname}/../../`; // eslint-disable-line
 
+/*
+var root = `${__dirname}/../../`; // eslint-disable-line
 var exampleConfig = {
   port : 3000,
   classpath : [
@@ -26,6 +26,7 @@ var exampleConfig = {
     maxpoolsize: 50
   }
 };
+*/
 
 var results = [ {
   'ABC' : 123,

@@ -3,23 +3,23 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const fs = require("fs");
 const assert = require("assert");
 const debug = require("debug");
+const constants_1 = require("./constants");
 const debuglog = debug('parseinput');
-class IStatementRun {
-    constructor() {
-        this.parallel = 0;
-        this.statement = undefined;
-        this.tag = undefined;
-        this.terminate_nr = 0;
-        this.terminate_delta_t = 0;
-    }
-}
-exports.IStatementRun = IStatementRun;
-;
+/*
+export class IStatementRun
+{
+  parallel: number = 0;
+  statement : string = undefined;
+  tag : string = undefined;
+  terminate_nr? : number = 0;
+  terminate_delta_t? : number = 0;
+};
+*/
 class ParseInput {
     constructor(fnin) {
         this.fnin = undefined;
         this.src = undefined;
-        this.RegExpTagLine = new RegExp(/^--\s*\[([A-Z0-9_]+)\]\s+(.*)/);
+        this.RegExpTagLine = new RegExp(/^--\s*\[(TAG=)?([A-Z0-9_]+)\]\s*(.*)/);
         this.RegExpComment = new RegExp(/^--/);
         this.fnin = fnin;
         if (fnin) {
@@ -29,6 +29,10 @@ class ParseInput {
     ;
     parseIntArg(prefix, input, defaultValue) {
         assert(prefix);
+        console.log('here input >' + input + '<');
+        if (input.length == 0) {
+            return defaultValue;
+        }
         assert(input);
         var input = input.replace(/  /g, ' ');
         var args = input.split(/ /);
@@ -53,8 +57,8 @@ class ParseInput {
             return undefined;
         }
         return {
-            tag: m[1],
-            tail: m[2]
+            tag: m[2],
+            tail: m[3]
         };
     }
     /**
@@ -65,12 +69,14 @@ class ParseInput {
         var that = this;
         var res = [];
         var rec = undefined;
+        var prevrec = undefined;
+        input = input || this.src;
         var x = input.split(/\n/);
         x.forEach((line, index) => {
             line = line.trim();
-            console.log('here line ' + index + ' ' + line);
+            debuglog('here line ' + index + ' ' + line);
             var r = that.parseTagLine(line);
-            console.log(' here r ' + JSON.stringify(r));
+            debuglog(' here r ' + JSON.stringify(r));
             if (line.length == 0) {
             }
             else if (r) {
@@ -80,19 +86,27 @@ class ParseInput {
                         console.log('missing statement at ' + that.fnin + '[' + index + ':1]');
                         process.exit(-1);
                     }
-                    console.log('here adding ' + JSON.stringify(rec));
+                    debuglog('adding' + (res.length + 1) + 'record : ' + JSON.stringify(rec));
                     res.push(rec);
+                    prevrec = rec;
                 }
                 assert(r.tag);
                 var tail = r.tail || "";
-                rec = new IStatementRun();
+                rec = new constants_1.IStatementRun();
                 rec.tag = r.tag;
-                rec.parallel = that.parseIntArg('P=', tail, 1);
+                rec.parallel = that.parseIntArg('P=', tail, (prevrec && prevrec.parallel) || 1);
                 rec.terminate_delta_t = that.parseIntArg('T=', tail, undefined);
-                console.log('here delta t' + rec.terminate_delta_t);
+                debuglog('here delta t' + rec.terminate_delta_t);
                 rec.terminate_nr = that.parseIntArg('NR=', tail, undefined);
+                if (!rec.terminate_delta_t && !rec.terminate_nr) {
+                    rec.terminate_nr = prevrec && prevrec.terminate_nr;
+                }
+                if (!rec.terminate_delta_t && !rec.terminate_nr) {
+                    console.log('no termination at statement around line ' + index);
+                    process.exit(-1);
+                }
                 rec.statement = "";
-                console.log('here new rec' + JSON.stringify(rec, undefined, 2));
+                debuglog('here new rec' + JSON.stringify(rec, undefined, 2));
             }
             else if (!that.isComment(line)) {
                 console.log('here statement  >' + line + '<');
@@ -100,7 +114,7 @@ class ParseInput {
                     rec.statement += "\n";
                 }
                 rec.statement += line;
-                console.log('here statement ' + rec.statement);
+                debuglog('here statement ' + rec.statement);
             }
         });
         if (rec.statement) {

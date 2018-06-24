@@ -6,11 +6,11 @@ const debuglog = debug('average');
 const sqlexec_remote_1 = require("./sqlexec_remote");
 var SQLExec = require('./sqlexec.js').SQLExec;
 class ParallelPool {
-    constructor(nrexec, pool, config, configFileName) {
+    constructor(nrexec, pool, fullconfig) {
         var nrForks = Math.floor((nrexec - 1) / 4);
         this.pool = pool;
         console.log('settign up ' + nrForks + ' forks');
-        this.forks = new sqlexec_remote_1.Forks(nrForks, configFileName);
+        this.forks = new sqlexec_remote_1.Forks(nrForks, fullconfig);
         ;
     }
     ;
@@ -20,6 +20,9 @@ class ParallelPool {
             this.executors = this.executors.concat(this.forks.getExecutors(4));
         }
         return this.executors;
+    }
+    stop() {
+        this.forks && this.forks.stop();
     }
 }
 exports.ParallelPool = ParallelPool;

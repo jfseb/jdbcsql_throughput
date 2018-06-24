@@ -23,11 +23,11 @@ export class ParallelPool {
   executors : ISQLExecutor[];
   forks: Forks;
   pool : any;
-  constructor(nrexec : number, pool: any, config : any, configFileName : string) {
+  constructor(nrexec : number, pool: any, fullconfig : any) {
       var nrForks = Math.floor( (nrexec-1) / 4);
       this.pool = pool;
       console.log('settign up ' + nrForks + ' forks');
-      this.forks = new Forks(nrForks , configFileName);
+      this.forks = new Forks(nrForks , fullconfig);
       ;
   };
   getExecutors() {
@@ -36,5 +36,8 @@ export class ParallelPool {
         this.executors = this.executors.concat(this.forks.getExecutors(4));
     }
     return this.executors;
+  }
+  stop() {
+    this.forks && this.forks.stop();
   }
 }

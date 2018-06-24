@@ -1,10 +1,4 @@
-export declare class IStatementRun {
-    parallel: number;
-    statement: string;
-    tag: string;
-    terminate_nr?: number;
-    terminate_delta_t?: number;
-}
+import { IStatementRun } from './constants';
 export declare class ParseInput {
     fnin: string;
     src: string;

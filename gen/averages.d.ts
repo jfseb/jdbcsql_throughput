@@ -7,14 +7,13 @@ export declare const enum ResponseCode {
     EXEC = 1,
     QUERY = 2,
 }
-import { IParallelOp, ICallbacks, IOptions, IParallelExecutor, ITimingMap, ITimingRec } from './constants';
+import { IParallelOp, IParallelExecutor, ITimingMap, ITimingRec, IStatementRun } from './constants';
 export declare function startOpMonitor(parexec: IParallelExecutor): void;
 /**
  *  execute a statement repeatedly until one calls close on the handle.
  *
  *
  */
-export declare function startOpRepeat(tag: string, statement: string, parallel: number, options?: IOptions, cb?: ICallbacks): string;
 export declare function dumpProgress(op: IParallelOp): void;
 export interface IResult {
     TAG: string;
@@ -58,4 +57,5 @@ export declare function getBestAvg(start: number, recs: ITimingRec[]): IAvgSet;
 export declare function dumpNice(v: any, len: number): string;
 export declare function dumpAllResults(allresult: IResult[]): void;
 export declare function dumpAllResultsToCSV(allresult: IResult[]): string;
-export declare function startSequence(configFileName: string, testpool: Pool, current_index?: number): void;
+export declare function startRun(fullconfig: any, input: IStatementRun[], testpool: Pool, options: any): void;
+export declare function startSequence(fullconfig: any, input: IStatementRun[], testpool: Pool, options: any, current_index?: number): void;
