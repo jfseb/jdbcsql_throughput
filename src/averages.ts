@@ -30,7 +30,7 @@ import { ISQLExecutor, IParallelOp, Status,
   IParallelExecutor,
   ITimingMap,
   IResultRec,
-  ITimingRec, 
+  ITimingRec,
   IStatementRun} from './constants';
 
 
@@ -462,18 +462,18 @@ export function dumpAllResultsToCSV(allresult : IResult[]) {
 }
 
 
-export function startRun(fullconfig : any, input : IStatementRun[], testpool : Pool, options : any)
+export function startRun(fullconfig : any, input : IStatementRun[], testpool : Pool, options : any, callback : ()=>void)
 {
   options.fnout = options.fnout || 'out.csv';
   var max_parallel = input.reduce(  (prev, entry) => Math.max(prev, entry.parallel), 0 );
   parpool = new ParallelPool(max_parallel, testpool, fullconfig );
-  parexec = new ParallelExec(parpool.getExecutors());  
-  var hndl = startOpMonitor(parexec);
+  parexec = new ParallelExec(parpool.getExecutors());
+  //var hndl = startOpMonitor(parexec);
 
-  startSequence(fullconfig, input, testpool, options, 0);
+  startSequence(fullconfig, input, testpool, options, 0, callback);
 }
 
-export function startSequence(fullconfig : any, input : IStatementRun[], testpool: Pool, options: any, current_index = 0) {
+export function startSequence(fullconfig : any, input : IStatementRun[], testpool: Pool, options: any, current_index : number, callback : () => void) {
 
   //var tcp001 = 'select count(*), AVG(T1.L_QUANTITY), AVG(T1.L_DISCOUNT + T2.L_DISCOUNT), AVG(T2.L_EXTENDEDPRICE), T2.L_SHIPMODE FROM LINEITEM1 AS T1 JOIN LINEITEM1 AS T2 ON T1.L_SHIPMODE = T2.L_SHIPMODE WHERE T1.L_SHIPMODE <= \'FOB\' AND T1.L_QUANTITY > 2 AND T2.L_QUANTITY > 10 GROUP BY T2.L_SHIPMODE ORDER BY T2.L_SHIPMODE;';
   //var tcp001 = 'select count(*), AVG(T1.L_QUANTITY), AVG(T1.L_DISCOUNT + T2.L_DISCOUNT), AVG(T2.L_EXTENDEDPRICE), T2.L_SHIPMODE FROM LINEITEM1 AS T1 JOIN LINEITEM1 AS T2 ON T1.L_SHIPMODE = T2.L_SHIPMODE WHERE T1.L_SHIPMODE <= \'B\' AND T1.L_QUANTITY > 10 AND T2.L_QUANTITY > 10 GROUP BY T2.L_SHIPMODE ORDER BY T2.L_SHIPMODE;';
@@ -486,15 +486,15 @@ export function startSequence(fullconfig : any, input : IStatementRun[], testpoo
   //ALTERD
   //tcp_001_4 = 'select count(*), AVG(T1.L_QUANTITY), AVG(T1.L_DISCOUNT + T2.L_DISCOUNT), AVG(T2.L_EXTENDEDPRICE), T2.L_SHIPMODE FROM LINEITEM1 AS T1 JOIN LINEITEM1 AS T2 ON T1.L_SHIPMODE = T2.L_SHIPMODE WHERE T1.L_SHIPMODE <= \'FOB\' AND T1.L_PARTKEY > 1000 AND T2.L_PARTKEY > 1000 AND T1.L_QUANTITY > 2 AND T2.L_QUANTITY > 1000 GROUP BY T2.L_SHIPMODE ORDER BY T2.L_SHIPMODE;';
 
-  var interim : string[] = 
+  var interim : string[] =
   [
-    `ALTER SYSTEM ALTER CONFIGURATION ('VORA', 'SYSTEM') SET ('RELATIONAL', 'QUOTA_OPEN_TXN_SIZE') = 18 WITH RECONFIGURE;`,    
+    `ALTER SYSTEM ALTER CONFIGURATION ('VORA', 'SYSTEM') SET ('RELATIONAL', 'QUOTA_OPEN_TXN_SIZE') = 18 WITH RECONFIGURE;`,
     `ALTER SYSTEM ALTER CONFIGURATION ('VORA', 'SYSTEM') SET ('RELATIONAL', 'QUOTA_WAITING_TXN_SIZE') = 10  WITH RECONFIGURE;`,
-    `ALTER SYSTEM ALTER CONFIGURATION ('VORA', 'SYSTEM') SET ('RELATIONAL', 'QUOTA_OPEN_TXN_SIZE') = 19 WITH RECONFIGURE;`,    
+    `ALTER SYSTEM ALTER CONFIGURATION ('VORA', 'SYSTEM') SET ('RELATIONAL', 'QUOTA_OPEN_TXN_SIZE') = 19 WITH RECONFIGURE;`,
     `ALTER SYSTEM ALTER CONFIGURATION ('VORA', 'SYSTEM') SET ('RELATIONAL', 'QUOTA_WAITING_TXN_SIZE') = 9  WITH RECONFIGURE;`,
-    `ALTER SYSTEM ALTER CONFIGURATION ('VORA', 'SYSTEM') SET ('RELATIONAL', 'QUOTA_OPEN_TXN_SIZE') = 18 WITH RECONFIGURE;`,    
+    `ALTER SYSTEM ALTER CONFIGURATION ('VORA', 'SYSTEM') SET ('RELATIONAL', 'QUOTA_OPEN_TXN_SIZE') = 18 WITH RECONFIGURE;`,
     `ALTER SYSTEM ALTER CONFIGURATION ('VORA', 'SYSTEM') SET ('RELATIONAL', 'QUOTA_WAITING_TXN_SIZE') = 10  WITH RECONFIGURE;`,
-    `ALTER SYSTEM ALTER CONFIGURATION ('VORA', 'SYSTEM') SET ('RELATIONAL', 'QUOTA_OPEN_TXN_SIZE') = -1 WITH RECONFIGURE;`,    
+    `ALTER SYSTEM ALTER CONFIGURATION ('VORA', 'SYSTEM') SET ('RELATIONAL', 'QUOTA_OPEN_TXN_SIZE') = -1 WITH RECONFIGURE;`,
     `ALTER SYSTEM ALTER CONFIGURATION ('VORA', 'SYSTEM') SET ('RELATIONAL', 'QUOTA_WAITING_TXN_SIZE') = -1  WITH RECONFIGURE;`,
   ];
 
@@ -531,10 +531,10 @@ export function startSequence(fullconfig : any, input : IStatementRun[], testpoo
 
 
 
-  var runOneInterim = function(index : number, done : any, reject: any)  
+  var runOneInterim = function(index : number, done : any, reject: any)
   {
     var r = parexec.startSequentialSimple(interim[index+0]).then( ()=>
-        parexec.startSequentialSimple(interim[index+1]) 
+        parexec.startSequentialSimple(interim[index+1])
       ).then( ()=> {
 
           if (index+2 == interim.length) {
@@ -542,15 +542,15 @@ export function startSequence(fullconfig : any, input : IStatementRun[], testpoo
           }
           else {
             setTimeout( function() {
-            runOneInterim(index+2, done, reject);
+              runOneInterim(index+2, done, reject);
             }, 2000);
         }
       }).catch(reject);
-  } 
+  }
 
   function runInterims(parexec : IParallelExecutor) : Promise<any> {
     return new Promise( function(resolve, reject ) {
-      runOneInterim(0, resolve, reject);    
+      runOneInterim(0, resolve, reject);
     })
   }
 
@@ -564,21 +564,25 @@ export function startSequence(fullconfig : any, input : IStatementRun[], testpoo
     parexec.stopOp('monitor');
     parexec.stopOp(handle);
     parexec.triggerLoop();
-    // run the cleanup scripts 
-    // we want to temper with the config to clear maxmem 
-    // but due to the synchronization delay, we wait 3 seconds. 
+    // run the cleanup scripts
+    // we want to temper with the config to clear maxmem
+    // but due to the synchronization delay, we wait 3 seconds.
 
     //loopIt(executor);
     ++index;
     if(index < input.length) {
       runInterims(parexec).then( ()=> {
         console.log("*** INDEX");
-        startSequence(fullconfig, input, testpool, options, index);
+        startSequence(fullconfig, input, testpool, options, index, callback);
       });
     } else {
-      console.log('stop forks '); 
+      console.log('stop forks ');
       parpool.stop();
-      process.exit(0);
+      if(!callback ) {
+        process.exit(0);
+      } else {
+        callback();
+      }
     }
   };
 
@@ -590,8 +594,8 @@ export function startSequence(fullconfig : any, input : IStatementRun[], testpoo
 
   parexec.triggerLoop();
   var handle;
-  setTimeout( function() {
-  }, 500);
+  /*setTimeout( function() {
+  }, 500);*/
 
   // beware, this only stops when all queries are completed;
   /*

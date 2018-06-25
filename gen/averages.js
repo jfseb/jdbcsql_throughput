@@ -387,16 +387,16 @@ function dumpAllResultsToCSV(allresult) {
     return csv_stringify(allresult, { header: true, columns: headersarr });
 }
 exports.dumpAllResultsToCSV = dumpAllResultsToCSV;
-function startRun(fullconfig, input, testpool, options) {
+function startRun(fullconfig, input, testpool, options, callback) {
     options.fnout = options.fnout || 'out.csv';
     var max_parallel = input.reduce((prev, entry) => Math.max(prev, entry.parallel), 0);
     parpool = new parallel_pool_1.ParallelPool(max_parallel, testpool, fullconfig);
     parexec = new parallel_exec_1.ParallelExec(parpool.getExecutors());
-    var hndl = startOpMonitor(parexec);
-    startSequence(fullconfig, input, testpool, options, 0);
+    //var hndl = startOpMonitor(parexec);
+    startSequence(fullconfig, input, testpool, options, 0, callback);
 }
 exports.startRun = startRun;
-function startSequence(fullconfig, input, testpool, options, current_index = 0) {
+function startSequence(fullconfig, input, testpool, options, current_index, callback) {
     //var tcp001 = 'select count(*), AVG(T1.L_QUANTITY), AVG(T1.L_DISCOUNT + T2.L_DISCOUNT), AVG(T2.L_EXTENDEDPRICE), T2.L_SHIPMODE FROM LINEITEM1 AS T1 JOIN LINEITEM1 AS T2 ON T1.L_SHIPMODE = T2.L_SHIPMODE WHERE T1.L_SHIPMODE <= \'FOB\' AND T1.L_QUANTITY > 2 AND T2.L_QUANTITY > 10 GROUP BY T2.L_SHIPMODE ORDER BY T2.L_SHIPMODE;';
     //var tcp001 = 'select count(*), AVG(T1.L_QUANTITY), AVG(T1.L_DISCOUNT + T2.L_DISCOUNT), AVG(T2.L_EXTENDEDPRICE), T2.L_SHIPMODE FROM LINEITEM1 AS T1 JOIN LINEITEM1 AS T2 ON T1.L_SHIPMODE = T2.L_SHIPMODE WHERE T1.L_SHIPMODE <= \'B\' AND T1.L_QUANTITY > 10 AND T2.L_QUANTITY > 10 GROUP BY T2.L_SHIPMODE ORDER BY T2.L_SHIPMODE;';
     //var tcp001 = 'select count(*), AVG(T1.L_QUANTITY), AVG(T1.L_DISCOUNT + T2.L_DISCOUNT), AVG(T2.L_EXTENDEDPRICE), T2.L_SHIPMODE FROM LINEITEM1 AS T1 JOIN LINEITEM1 AS T2 ON T1.L_SHIPMODE = T2.L_SHIPMODE WHERE T1.L_SHIPMODE <= \'B\' AND T1.L_QUANTITY > 10 AND T2.L_QUANTITY > 100 GROUP BY T2.L_SHIPMODE ORDER BY T2.L_SHIPMODE;';
@@ -465,21 +465,26 @@ function startSequence(fullconfig, input, testpool, options, current_index = 0) 
         parexec.stopOp('monitor');
         parexec.stopOp(handle);
         parexec.triggerLoop();
-        // run the cleanup scripts 
-        // we want to temper with the config to clear maxmem 
-        // but due to the synchronization delay, we wait 3 seconds. 
+        // run the cleanup scripts
+        // we want to temper with the config to clear maxmem
+        // but due to the synchronization delay, we wait 3 seconds.
         //loopIt(executor);
         ++index;
         if (index < input.length) {
             runInterims(parexec).then(() => {
                 console.log("*** INDEX");
-                startSequence(fullconfig, input, testpool, options, index);
+                startSequence(fullconfig, input, testpool, options, index, callback);
             });
         }
         else {
             console.log('stop forks ');
             parpool.stop();
-            process.exit(0);
+            if (!callback) {
+                process.exit(0);
+            }
+            else {
+                callback();
+            }
         }
     };
     handle = parexec.startOpRepeat(input[current_index].tag, input[current_index].statement, input[current_index].parallel, { continuous: true, terminate_nr: input[current_index].terminate_nr }, {
@@ -488,8 +493,8 @@ function startSequence(fullconfig, input, testpool, options, current_index = 0) 
     });
     parexec.triggerLoop();
     var handle;
-    setTimeout(function () {
-    }, 500);
+    /*setTimeout( function() {
+    }, 500);*/
     // beware, this only stops when all queries are completed;
     /*
     setTimeout( function() {

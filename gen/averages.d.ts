@@ -57,5 +57,5 @@ export declare function getBestAvg(start: number, recs: ITimingRec[]): IAvgSet;
 export declare function dumpNice(v: any, len: number): string;
 export declare function dumpAllResults(allresult: IResult[]): void;
 export declare function dumpAllResultsToCSV(allresult: IResult[]): string;
-export declare function startRun(fullconfig: any, input: IStatementRun[], testpool: Pool, options: any): void;
-export declare function startSequence(fullconfig: any, input: IStatementRun[], testpool: Pool, options: any, current_index?: number): void;
+export declare function startRun(fullconfig: any, input: IStatementRun[], testpool: Pool, options: any, callback: () => void): void;
+export declare function startSequence(fullconfig: any, input: IStatementRun[], testpool: Pool, options: any, current_index: number, callback: () => void): void;

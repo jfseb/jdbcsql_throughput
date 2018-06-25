@@ -33,6 +33,7 @@ var handles = new Map<string, IParallelOp>();
 
 var every_t_interval = undefined;
 var every_t_use_count  = 0;
+var every_t_tags = {};
 /*
  export const enum ResponseCode {
   NOMATCH = 0,
@@ -224,7 +225,10 @@ export class ParallelExec implements IParallelExecutor {
     var that = this;
     if(op.options.every_t) {
       every_t_interval = every_t_interval || setInterval( that.loopIt.bind(that), 20 );
-      every_t_use_count++;
+      if(!every_t_tags[op.name]) {
+        every_t_tags[op.name] = 1;
+        every_t_use_count++;      
+      }
     }
     //assert(handles.has(op.name) == false);
     handles.set(op.name, op);
@@ -480,9 +484,11 @@ export class ParallelExec implements IParallelExecutor {
         that.freeExecutorUsage(op.slots);
         if(op.options.every_t) {
           --every_t_use_count;
+          delete every_t_tags[key];
           if(every_t_use_count == 0) {
             assert(every_t_interval);
             clearInterval(every_t_interval);
+            every_t_interval = undefined;
           }
         }
         handles.delete(key);
