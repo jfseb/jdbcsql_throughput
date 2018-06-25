@@ -1,6 +1,6 @@
 {
   "name": "jdbcsql_throughput",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Nodejs JDBC SQL connector and sample program for throughput measurement",
   "main": "gen/index.js",
   "typings": "gen/index.d.ts",
