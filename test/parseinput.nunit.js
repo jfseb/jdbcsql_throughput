@@ -25,6 +25,8 @@ tap.test('testParseInput.isTagLine' , function(test) {
   var parser = new ParseInput.ParseInput();
   tap.deepEqual(parser.parseTagLine('--ABC [DEF]'), undefined);
   tap.deepEqual(parser.parseTagLine('--[ABC_KLM] NP=3 ABC=1 ANP=4 NP=3'), { tag: 'ABC_KLM', tail : 'NP=3 ABC=1 ANP=4 NP=3'  });
+  tap.deepEqual(parser.parseTagLine('--[TAG=ABC_KLM] NP=3 ABC=1 ANP=4 NP=3'), { tag: 'ABC_KLM', tail : 'NP=3 ABC=1 ANP=4 NP=3'  });
+  tap.deepEqual(parser.parseTagLine('--[TAG=ABC_KLM]'), { tag: 'ABC_KLM', tail : ''  });
   tap.deepEqual(parser.parseTagLine('--  [ABC_KLM] NP=3 ABC=1 ANP=4 NP=3'), { tag: 'ABC_KLM', tail : 'NP=3 ABC=1 ANP=4 NP=3'  } );
   test.done();
 });
@@ -34,7 +36,7 @@ tap.test('testParseInput.isTagLine' , function(test) {
 tap.test('testParseInput.isTagLine' , function(test) {
   var parser = new ParseInput.ParseInput();
   tap.deepEqual(parser.isComment('--ABC [DEF]'), true);
-  tap.deepEqual(parser.parseTagLine('[ABC_KLM] NP=3 ABC=1 ANP=4 NP=3'), false);
+  tap.deepEqual(parser.parseTagLine('[ABC_KLM] NP=3 ABC=1 ANP=4 NP=3'), undefined);
   test.done();
 });
 
